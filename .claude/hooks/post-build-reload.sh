@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# Post-build hook: reload plugin via Obsidian CLI
-# Triggered by PostToolUse Bash hook after `pnpm run build` / `npm run build`
+# PostToolUse hook: Reload plugin via Obsidian CLI after build
+# Matcher: Bash
+
+set -euo pipefail
 
 INPUT=$(cat)
-TOOL_INPUT=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+TOOL_INPUT=$(jq -r '.tool_input.command // empty' <<< "$INPUT" 2>/dev/null)
 
 # Only trigger on build commands
-if ! echo "$TOOL_INPUT" | grep -qE '(npm|pnpm)\s+run\s+build'; then
-  exit 0
-fi
+[[ "$TOOL_INPUT" =~ (npm|pnpm)[[:space:]]+run[[:space:]]+build ]] || exit 0
 
-# Determine plugin directory from build command context
 cd "$CLAUDE_PROJECT_DIR"
+
 for dir in obsidian-eagle-plugin Metadata-Auto-Classifier obsidian-smart-connections; do
-  if echo "$TOOL_INPUT" | grep -q "$dir"; then
+  if [[ "$TOOL_INPUT" == *"$dir"* ]]; then
     PLUGIN_ID=$(jq -r '.id' "$dir/manifest.json" 2>/dev/null)
     [ -n "$PLUGIN_ID" ] && obsidian plugin:reload id="$PLUGIN_ID" 2>/dev/null
     exit 0
   fi
 done
+
 exit 0

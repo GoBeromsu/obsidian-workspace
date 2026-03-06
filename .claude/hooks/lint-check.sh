@@ -4,16 +4,13 @@
 
 set -euo pipefail
 
-# Read tool use info from stdin
 INPUT=$(cat)
 
 # Extract the file path from the tool input
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.filePath // empty' 2>/dev/null)
+FILE_PATH=$(jq -r '.tool_input.file_path // .tool_input.filePath // empty' <<< "$INPUT" 2>/dev/null)
 
 # Exit silently if no file path found
-if [ -z "$FILE_PATH" ]; then
-  exit 0
-fi
+[ -z "$FILE_PATH" ] && exit 0
 
 # Only lint TypeScript/JavaScript files
 case "$FILE_PATH" in
@@ -22,24 +19,18 @@ case "$FILE_PATH" in
 esac
 
 # Skip files outside the project
-if [[ "$FILE_PATH" != "$CLAUDE_PROJECT_DIR"* ]]; then
-  exit 0
-fi
+[[ "$FILE_PATH" != "$CLAUDE_PROJECT_DIR/"* ]] && exit 0
 
 # Determine which plugin directory this file belongs to
 PLUGIN_DIR=""
-if [[ "$FILE_PATH" == *"/obsidian-eagle-plugin/"* ]]; then
-  PLUGIN_DIR="$CLAUDE_PROJECT_DIR/obsidian-eagle-plugin"
-elif [[ "$FILE_PATH" == *"/Metadata-Auto-Classifier/"* ]]; then
-  PLUGIN_DIR="$CLAUDE_PROJECT_DIR/Metadata-Auto-Classifier"
-elif [[ "$FILE_PATH" == *"/obsidian-smart-connections/"* ]]; then
-  PLUGIN_DIR="$CLAUDE_PROJECT_DIR/obsidian-smart-connections"
-fi
+for dir in obsidian-eagle-plugin Metadata-Auto-Classifier obsidian-smart-connections; do
+  if [[ "$FILE_PATH" == *"/$dir/"* ]]; then
+    PLUGIN_DIR="$CLAUDE_PROJECT_DIR/$dir"
+    break
+  fi
+done
 
-# Exit if not in a known plugin directory
-if [ -z "$PLUGIN_DIR" ]; then
-  exit 0
-fi
+[ -z "$PLUGIN_DIR" ] && exit 0
 
 # Check if eslint config exists in the plugin directory
 HAS_ESLINT=false
@@ -50,17 +41,12 @@ for config in .eslintrc .eslintrc.js .eslintrc.json .eslintrc.yml .eslintrc.yaml
   fi
 done
 
-# Also check package.json for eslintConfig
 if [ "$HAS_ESLINT" = false ] && [ -f "$PLUGIN_DIR/package.json" ]; then
-  if jq -e '.eslintConfig' "$PLUGIN_DIR/package.json" >/dev/null 2>&1; then
-    HAS_ESLINT=true
-  fi
+  jq -e '.eslintConfig' "$PLUGIN_DIR/package.json" >/dev/null 2>&1 && HAS_ESLINT=true
 fi
 
-if [ "$HAS_ESLINT" = false ]; then
-  exit 0
-fi
+[ "$HAS_ESLINT" = false ] && exit 0
 
-# Run eslint on the specific file
+# Run eslint on the specific file using local binary
 cd "$PLUGIN_DIR"
-npx eslint "$FILE_PATH" --no-error-on-unmatched-pattern 2>&1 || true
+pnpm exec eslint "$FILE_PATH" --no-error-on-unmatched-pattern 2>&1 || true

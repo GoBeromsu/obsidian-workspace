@@ -33,7 +33,7 @@ When requirements are ambiguous or complex, use structured interviews:
 - Identify affected components
 - Review similar implementations
 - Consider reusable patterns
-- **Check file ownership table** in TEAM.md to avoid agent conflicts
+- **Assign clear file ownership per wave** to avoid agent conflicts
 
 ### 3. Wave-Based Execution Strategy
 
@@ -69,11 +69,12 @@ Create detailed steps with:
 
 ### 5. Checkpoint Strategy
 
-After each wave:
-1. Build passes? (`npm run build` or `yarn build`)
-2. Tests pass? (`npm run test` or `yarn test`)
-3. CDP verification clean? (verify-plugin.mjs, check-view.mjs)
-4. No console errors? (check-console.mjs)
+After each wave, `obsidian-developer` runs the closed verification loop:
+1. Build passes? (`pnpm build`)
+2. Plugin reloaded? (`obsidian plugin:reload id=<plugin-id>`)
+3. No runtime errors? (`obsidian dev:errors`)
+4. Visual correct? (`obsidian dev:screenshot`)
+5. Internal state valid? (`obsidian eval code="..."`)
 
 If any checkpoint fails → stop, diagnose, fix before next wave.
 
@@ -124,23 +125,23 @@ If any checkpoint fails → stop, diagnose, fix before next wave.
 ## Wave Execution
 
 ### Wave 1: [Foundation]
-**Agents:** ts-developer (files: ...), tester (files: ...)
-**Checkpoint:** build + test
+**Agents:** obsidian-developer (files: ...), obsidian-ui (files: ...)
+**Checkpoint:** pnpm build → plugin:reload → dev:errors → dev:screenshot
 
-1. **[Step Name]** (File: path/to/file.ts, Owner: ts-developer)
+1. **[Step Name]** (File: path/to/file.ts, Owner: obsidian-developer)
    - Action: ...
    - Risk: Low/Medium/High
 
 ### Wave 2: [Features]
-**Agents:** ts-developer (files: ...), ts-developer-2 (files: ...)
-**Checkpoint:** build + test + CDP verify
+**Agents:** obsidian-developer (files: ...), obsidian-ui (files: ...)
+**Checkpoint:** pnpm build → plugin:reload → dev:errors → dev:screenshot → eval
 
 ### Wave 3: [Polish]
 ...
 
-## Testing Strategy
+## Verification Strategy
 - Unit tests: [files to test]
-- CDP verification: [scripts to run]
+- obsidian-cli loop: plugin:reload → dev:errors → dev:screenshot → eval
 - Manual checks: [user-visible behaviors]
 
 ## Risks & Mitigations
@@ -148,9 +149,9 @@ If any checkpoint fails → stop, diagnose, fix before next wave.
   - Mitigation: [How to address]
 
 ## Success Criteria
-- [ ] Build passes
-- [ ] Tests pass
-- [ ] CDP verification clean
+- [ ] `pnpm build` passes
+- [ ] `obsidian dev:errors` returns no errors after reload
+- [ ] `obsidian dev:screenshot` confirms visual correctness
 - [ ] [Feature-specific criteria]
 ```
 

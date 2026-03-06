@@ -1,0 +1,17 @@
+# Personal notes — never commit
+notes/
+
+# Local env (contains personal vault paths)
+.env
+
+# macOS
+.DS_Store
+
+# Plugin subdirs are independent git repos — exclude from parent tracking
+obsidian-eagle-plugin/
+obsidian-smart-connections/
+Metadata-Auto-Classifier/
+obsidian-boiler-template/
+
+# Codex AI scratch dir
+.codex/
