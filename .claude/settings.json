@@ -1,22 +1,49 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(obsidian *)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm test*)"
+    ],
+    "deny": [
+      "Bash(git tag*)",
+      "Bash(git push*--tags*)",
+      "Bash(gh release*)",
+      "Bash(npm publish*)",
+      "Bash(pnpm publish*)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "enabledPlugins": {
+    "code-simplifier@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true
+  },
   "hooks": {
     "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-build-reload.sh",
-            "timeout": 30
-          }
-        ]
-      },
       {
         "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/lint-check.sh",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-build-reload.sh",
             "timeout": 30
           }
         ]
@@ -33,11 +60,5 @@
         ]
       }
     ]
-  },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "enabledPlugins": {
-    "code-simplifier@claude-plugins-official": true
   }
 }
