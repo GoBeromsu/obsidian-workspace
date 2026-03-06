@@ -1,0 +1,12 @@
+[submodule "obsidian-eagle-plugin"]
+	path = obsidian-eagle-plugin
+	url = https://github.com/GoBeromsu/obsidian-eagle-plugin.git
+[submodule "obsidian-boiler-template"]
+	path = obsidian-boiler-template
+	url = https://github.com/GoBeromsu/obsidian-boiler-template.git
+[submodule "Metadata-Auto-Classifier"]
+	path = Metadata-Auto-Classifier
+	url = https://github.com/GoBeromsu/Metadata-Auto-Classifier.git
+[submodule "obsidian-smart-connections"]
+	path = obsidian-smart-connections
+	url = https://github.com/GoBeromsu/Open-smart-connections.git
