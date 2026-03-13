@@ -23,3 +23,34 @@
 
 - Read config files directly (not via UI screenshots)
 - Investigate config conflicts before suggesting restarts
+
+## Monorepo Layout
+
+| Submodule | Purpose | Default Branch |
+|-----------|---------|----------------|
+| `obsidian-eagle-plugin` | Image upload to Eagle app | `main` |
+| `obsidian-smart-connections` | Semantic note connections via embeddings | `main` |
+| `Metadata-Auto-Classifier` | AI-powered metadata classification | `master` |
+| `obsidian-boiler-template` | Source-of-truth seed template | `master` |
+| `obsidian-bible-search` | Bible verse search (private) | `main` |
+
+## Release Workflow
+
+Every plugin follows the same release pipeline:
+
+1. `pnpm ci` — MUST pass (build + lint + test)
+2. `pnpm release:patch`, `pnpm release:minor`, or `pnpm release:major` — lint:fix -> version bump -> auto-push tag
+3. GitHub Actions handles the rest (CI + Release workflows)
+
+**IMPORTANT:** `git tag`, `git push --tags`, `gh release`, `npm publish`, and `pnpm publish` are **DENIED** by settings.json. Only `pnpm release:*` is allowed to trigger the release pipeline.
+
+## `.claude/` Structure
+
+```
+.claude/
+├── agents/        # Custom agent definitions (obsidian-developer, obsidian-reviewer, obsidian-ui, planner)
+├── skills/        # Invocable skills (obsidian-propagate, readme-guide, release)
+├── hooks/         # PostToolUse and Stop hooks (lint-check, post-build-reload, stop-verify)
+├── commands/      # Legacy commands
+└── settings.json  # Permissions, deny-list, hooks config
+```
