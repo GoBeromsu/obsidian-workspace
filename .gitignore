@@ -1,5 +1,5 @@
 # Personal notes — never commit
-notes/
+notes
 
 # Local env (contains personal vault paths)
 .env
