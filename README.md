@@ -34,7 +34,7 @@ pnpm dev      # Watch mode + hot reload into vault
 pnpm build    # Production build
 pnpm test     # Vitest
 pnpm lint     # ESLint
-pnpm ci       # build + lint + test
+pnpm run ci   # build + lint + test
 ```
 
 

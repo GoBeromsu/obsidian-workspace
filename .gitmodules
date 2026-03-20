@@ -10,3 +10,6 @@
 [submodule "obsidian-smart-connections"]
 	path = obsidian-smart-connections
 	url = https://github.com/GoBeromsu/Open-smart-connections.git
+[submodule "obsidian-qmd"]
+	path = obsidian-qmd
+	url = https://github.com/GoBeromsu/obsidian-qmd.git

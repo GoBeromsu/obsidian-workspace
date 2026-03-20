@@ -4,44 +4,34 @@
 
 set -euo pipefail
 
-# Prevent infinite loops — if this hook triggers a stop, don't re-run
-if [ "${STOP_HOOK_ACTIVE:-}" = "1" ]; then exit 0; fi
-export STOP_HOOK_ACTIVE=1
-
 cd "$CLAUDE_PROJECT_DIR"
 
-# Find recently modified files to determine the active plugin
-RECENT_FILE=$(git diff --name-only HEAD 2>/dev/null | head -1)
-[ -z "$RECENT_FILE" ] && RECENT_FILE=$(git diff --cached --name-only 2>/dev/null | head -1)
-[ -z "$RECENT_FILE" ] && exit 0
+# Collect unique top-level dirs from changed files (unstaged + staged)
+CHANGED_DIRS=$(git diff --name-only HEAD 2>/dev/null | sed 's|/.*||' | sort -u)
+[ -z "$CHANGED_DIRS" ] && exit 0
 
-# Determine plugin directory
-PLUGIN_DIR=""
-for dir in obsidian-eagle-plugin Metadata-Auto-Classifier obsidian-smart-connections; do
-  if [[ "$RECENT_FILE" == "$dir/"* ]]; then
-    PLUGIN_DIR="$CLAUDE_PROJECT_DIR/$dir"
-    break
+ERRORS=()
+
+for PLUGIN_NAME in $CHANGED_DIRS; do
+  PLUGIN_DIR="$CLAUDE_PROJECT_DIR/$PLUGIN_NAME"
+  [ -f "$PLUGIN_DIR/manifest.json" ] || continue
+
+  PKG="$PLUGIN_DIR/package.json"
+
+  if jq -e '.scripts.build' "$PKG" >/dev/null 2>&1; then
+    echo "Verifying build in $PLUGIN_NAME..."
+    pnpm run -C "$PLUGIN_DIR" build || ERRORS+=("Build failed in $PLUGIN_NAME.")
+  fi
+
+  if jq -e '.scripts.test' "$PKG" >/dev/null 2>&1; then
+    echo "Verifying tests in $PLUGIN_NAME..."
+    pnpm run -C "$PLUGIN_DIR" test || ERRORS+=("Tests failed in $PLUGIN_NAME.")
   fi
 done
 
-[ -z "$PLUGIN_DIR" ] && exit 0
-
-cd "$PLUGIN_DIR"
-
-ERRORS=""
-
-echo "Verifying build..."
-if ! pnpm run build; then
-  ERRORS="Build failed in $(basename "$PLUGIN_DIR")."
-fi
-
-echo "Verifying tests..."
-if ! pnpm run test; then
-  ERRORS="${ERRORS:+$ERRORS }Tests failed in $(basename "$PLUGIN_DIR")."
-fi
-
-if [ -n "$ERRORS" ]; then
-  jq -n --arg r "$ERRORS Please fix before stopping." '{decision:"block",reason:$r}'
+if [ ${#ERRORS[@]} -gt 0 ]; then
+  MSG="${ERRORS[*]} Please fix before stopping."
+  jq -n --arg r "$MSG" '{decision:"block",reason:$r}'
 fi
 
 exit 0
