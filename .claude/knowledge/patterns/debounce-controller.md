@@ -1,7 +1,7 @@
 ---
 type: pattern
 date: 2026-03-20
-plugin: obsidian-qmd, obsidian-smart-connections
+plugin: obsidian-qmd, open-connections
 tags: [debounce, async, state-management]
 confidence: high
 ---
@@ -77,6 +77,6 @@ export class DebounceController {
 ## Which plugins use it
 
 - **obsidian-qmd**: Auto-sync on vault file changes (`auto-sync.ts`)
-- **obsidian-smart-connections**: File watcher debounce (`file-watcher.ts`)
+- **open-connections**: File watcher debounce (`file-watcher.ts`)
 - **obsidian-eagle-plugin**: Not currently used (has its own simpler debounce)
 - **obsidian-bible-search**: Not used

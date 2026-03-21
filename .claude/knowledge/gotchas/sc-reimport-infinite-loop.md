@@ -1,7 +1,7 @@
 ---
 type: gotcha
 date: 2026-03-20
-plugin: obsidian-smart-connections
+plugin: open-connections
 tags: [embedding, lifecycle, timer, race-condition]
 confidence: high
 ---

@@ -1,7 +1,7 @@
 ---
 type: pattern
 date: 2026-03-20
-plugin: obsidian-smart-connections
+plugin: open-connections
 tags: [state-management, redux, pure-functions]
 confidence: high
 ---
@@ -69,4 +69,4 @@ export class EmbedStore {
 
 ## Which plugins use it
 
-- **obsidian-smart-connections**: Embedding kernel (`kernel/reducer.ts`, `kernel/store.ts`, `kernel/selectors.ts`)
+- **open-connections**: Embedding kernel (`kernel/reducer.ts`, `kernel/store.ts`, `kernel/selectors.ts`)

@@ -1,7 +1,7 @@
 ---
 type: pattern
 date: 2026-03-20
-plugin: obsidian-qmd, obsidian-smart-connections
+plugin: obsidian-qmd, open-connections
 tags: [dependency-injection, testing, adapter]
 confidence: high
 ---
@@ -57,4 +57,4 @@ const adapter = new QmdProcessAdapter('qmd', mockExec);
 ## Which plugins use it
 
 - **obsidian-qmd**: `QmdProcessAdapter` injects `execFileAsync` for child process calls
-- **obsidian-smart-connections**: Embedding model adapters use `requestUrl` from obsidian
+- **open-connections**: Embedding model adapters use `requestUrl` from obsidian

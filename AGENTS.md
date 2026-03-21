@@ -108,7 +108,7 @@ The composition root (`main.ts`) passes real Obsidian objects which satisfy thes
 | Submodule | Purpose | Default Branch |
 |-----------|---------|----------------|
 | `obsidian-eagle-plugin` | Image upload to Eagle app | `main` |
-| `obsidian-smart-connections` (plugin ID: `open-connections`) | Semantic note connections via embeddings | `main` |
+| `open-connections` | Semantic note connections via embeddings | `main` |
 | `Metadata-Auto-Classifier` | AI-powered metadata classification | `master` |
 | `obsidian-boiler-template` | Source-of-truth seed template | `master` |
 | `obsidian-bible-search` | Bible verse search (private) | `main` |

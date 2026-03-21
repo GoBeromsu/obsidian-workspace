@@ -7,9 +7,9 @@
 [submodule "Metadata-Auto-Classifier"]
 	path = Metadata-Auto-Classifier
 	url = https://github.com/GoBeromsu/Metadata-Auto-Classifier.git
-[submodule "obsidian-smart-connections"]
-	path = obsidian-smart-connections
-	url = https://github.com/GoBeromsu/Open-smart-connections.git
 [submodule "obsidian-qmd"]
 	path = obsidian-qmd
 	url = https://github.com/GoBeromsu/obsidian-qmd.git
+[submodule "open-connections"]
+	path = open-connections
+	url = https://github.com/GoBeromsu/open-connections.git

@@ -17,7 +17,7 @@ Managed targets are listed in `tooling/sync/targets.json`:
 - Metadata-Auto-Classifier
 - obsidian-bible-search
 - obsidian-qmd
-- obsidian-smart-connections
+- open-connections
 
 Synced artifacts include: scripts (dev, version, release, release-notes), infra (.editorconfig, eslint.base.js, commitlint, husky hooks), GitHub templates (issue/PR), shared source modules (plugin-notices, plugin-logger, debounce-controller, settings-migration, styles.base.css), and generated CI/Release workflows.
 
