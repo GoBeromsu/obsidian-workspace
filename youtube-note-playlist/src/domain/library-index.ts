@@ -5,7 +5,6 @@ import { hasType, asStringArray, asTrimmedString } from '../utils/frontmatter';
 import { buildYoutubeEmbedUrl, buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, extractYoutubeVideoId } from '../utils/youtube';
 import { canonicalizeNotePath, parsePlaylistTrackReference } from '../utils/wikilink';
 import { DEFAULT_PROPERTY_MAPPING } from './config';
-import { PLAYLIST_NOTE_TYPE } from './playlist-storage';
 
 interface TrackResolver {
   byPath: Map<string, string>;
@@ -35,7 +34,7 @@ function toMusicTrack(
   note: MarkdownNoteSnapshot,
   propertyMapping: YoutubePlaylistPropertyMapping,
 ): MusicTrack | null {
-  if (!hasType(note.frontmatter, 'music')) {
+  if (!hasType(note.frontmatter, propertyMapping.musicNoteType)) {
     return null;
   }
 
@@ -74,7 +73,7 @@ function toPlaylistNote(
 ): PlaylistNote | null {
   const rawTrackRefs = asStringArray(note.frontmatter?.[propertyMapping.playlistTrackProperty]);
   const isPlaylist =
-    hasType(note.frontmatter, PLAYLIST_NOTE_TYPE) ||
+    hasType(note.frontmatter, propertyMapping.playlistNoteType) ||
     (hasType(note.frontmatter, 'playlist') && rawTrackRefs.length > 0);
 
   if (!isPlaylist) {
@@ -143,7 +142,8 @@ function resolveTrackPath(reference: string, resolver: TrackResolver): string | 
 }
 
 function getPathStem(path: string): string {
-  return path.toLowerCase().replace(/\.md$/i, '');
+  const basename = path.split('/').pop() ?? path;
+  return basename.toLowerCase().replace(/\.md$/i, '');
 }
 
 function firstAvailableString(

@@ -136,6 +136,14 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
         loaded.playlistCoverProperty ?? '',
         DEFAULT_PROPERTY_MAPPING.playlistCoverProperty,
       ),
+      musicNoteType: normalizePropertyName(
+        loaded.musicNoteType ?? '',
+        DEFAULT_PROPERTY_MAPPING.musicNoteType,
+      ),
+      playlistNoteType: normalizePropertyName(
+        loaded.playlistNoteType ?? '',
+        DEFAULT_PROPERTY_MAPPING.playlistNoteType,
+      ),
     };
   }
 
@@ -163,6 +171,14 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     this.settings.playlistCoverProperty = normalizePropertyName(
       this.settings.playlistCoverProperty,
       DEFAULT_PROPERTY_MAPPING.playlistCoverProperty,
+    );
+    this.settings.musicNoteType = normalizePropertyName(
+      this.settings.musicNoteType,
+      DEFAULT_PROPERTY_MAPPING.musicNoteType,
+    );
+    this.settings.playlistNoteType = normalizePropertyName(
+      this.settings.playlistNoteType,
+      DEFAULT_PROPERTY_MAPPING.playlistNoteType,
     );
     await this.saveData(this.settings);
   }
@@ -318,9 +334,18 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     }
 
     const nextTrackPaths = [...playlist.trackPaths];
-    const [moved] = nextTrackPaths.splice(fromIndex, 1);
-    nextTrackPaths.splice(toIndex, 0, moved);
-    await this.writePlaylist(playlist.path, nextTrackPaths);
+    const [movedPath] = nextTrackPaths.splice(fromIndex, 1);
+    nextTrackPaths.splice(toIndex, 0, movedPath);
+
+    const nextTracks = [...playlist.tracks];
+    const [movedTrack] = nextTracks.splice(fromIndex, 1);
+    nextTracks.splice(toIndex, 0, movedTrack);
+
+    playlist.trackPaths = nextTrackPaths;
+    playlist.tracks = nextTracks;
+    this.notifyChange();
+
+    await this.persistPlaylist(playlist.path, nextTrackPaths);
   }
 
   async openNote(path: string): Promise<void> {
@@ -520,6 +545,23 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     await this.refreshIndex();
 
     this.notices.show('playlist_saved', { name: playlist.title });
+  }
+
+  private async persistPlaylist(playlistPath: string, trackPaths: string[]): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(playlistPath);
+    if (!(file instanceof TFile)) {
+      throw new Error(`Playlist file not found: ${playlistPath}`);
+    }
+
+    const existing = await this.app.vault.read(file);
+    const playlist = this.getPlaylistOrThrow(playlistPath);
+    const nextContent = updatePlaylistNoteContent(existing, {
+      trackPaths: trackPaths.map((trackPath) => canonicalizeNotePath(trackPath)),
+      coverUrl: playlist.coverUrl || undefined,
+      description: playlist.description || undefined,
+    }, this.settings);
+
+    await this.app.vault.modify(file, nextContent);
   }
 
   private async activateActivePlaylist(): Promise<void> {

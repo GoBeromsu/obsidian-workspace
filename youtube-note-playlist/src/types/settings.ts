@@ -5,6 +5,8 @@ export interface YoutubePlaylistPropertyMapping {
   playlistTrackProperty: string;
   playlistDescriptionProperty: string;
   playlistCoverProperty: string;
+  musicNoteType: string;
+  playlistNoteType: string;
 }
 
 export interface YoutubeNotePlaylistSettings extends YoutubePlaylistPropertyMapping {

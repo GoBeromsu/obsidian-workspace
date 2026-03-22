@@ -98,6 +98,8 @@ describe('buildMusicLibrary', () => {
       playlistTrackProperty: 'entries',
       playlistDescriptionProperty: 'summary',
       playlistCoverProperty: 'artwork',
+      musicNoteType: 'music',
+      playlistNoteType: 'music-playlist',
     });
 
     expect(snapshot.tracks[0]?.artist).toBe('Custom Artist');

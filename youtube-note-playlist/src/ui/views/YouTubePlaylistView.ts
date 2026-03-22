@@ -380,6 +380,8 @@ export class YouTubePlaylistView extends ItemView {
 
 			const thumb = row.createDiv({ cls: 'ynp-row-thumb' });
 			thumb.style.backgroundImage = `url("${track.thumbnailUrl}")`;
+			const thumbPlay = thumb.createDiv({ cls: 'ynp-row-thumb-play' });
+			setIcon(thumbPlay, 'play');
 			thumb.addEventListener('click', () => {
 				void this.runAction(`Playing ${track.title}`, () => this.host.playTrack(track.path));
 			});
@@ -397,10 +399,12 @@ export class YouTubePlaylistView extends ItemView {
 
 			const rowActions = row.createDiv({ cls: 'ynp-row-actions' });
 			if (state.currentTrack?.path === track.path) {
-				const currentIcon = rowActions.createDiv({ cls: 'ynp-row-state ynp-row-state-icon' });
-				currentIcon.setAttribute('aria-label', 'Playing');
-				currentIcon.setAttribute('title', 'Playing');
-				setIcon(currentIcon, 'volume-2');
+				const eqBars = rowActions.createDiv({ cls: 'ynp-row-state ynp-eq-bars' });
+				eqBars.setAttribute('aria-label', 'Playing');
+				eqBars.setAttribute('title', 'Playing');
+				eqBars.createDiv({ cls: 'ynp-eq-bar' });
+				eqBars.createDiv({ cls: 'ynp-eq-bar' });
+				eqBars.createDiv({ cls: 'ynp-eq-bar' });
 			}
 			rowActions.appendChild(this.createMenuButton('Track actions', 'more-vertical', (event) => {
 				this.openTrackMenu(event, track);

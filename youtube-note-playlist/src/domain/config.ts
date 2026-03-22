@@ -7,6 +7,8 @@ export const DEFAULT_PROPERTY_MAPPING: YoutubePlaylistPropertyMapping = {
   playlistTrackProperty: 'tracks',
   playlistDescriptionProperty: 'description',
   playlistCoverProperty: 'cover',
+  musicNoteType: 'music',
+  playlistNoteType: 'music-playlist',
 };
 
 export const DEFAULT_SETTINGS: YoutubeNotePlaylistSettings = {

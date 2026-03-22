@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { AbstractInputSuggest, App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { DEFAULT_PROPERTY_MAPPING } from '../domain/config';
 import type { YoutubeNotePlaylistSettings } from '../types/settings';
 
@@ -9,6 +9,81 @@ interface SettingsHost extends Plugin {
 	refreshCompanionBases(): Promise<void>;
 }
 
+function collectVaultProperties(app: App): string[] {
+	const properties = new Set<string>();
+	for (const file of app.vault.getMarkdownFiles()) {
+		const cache = app.metadataCache.getFileCache(file);
+		if (cache?.frontmatter) {
+			for (const key of Object.keys(cache.frontmatter)) {
+				if (key !== 'position') properties.add(key);
+			}
+		}
+	}
+	return [...properties].sort();
+}
+
+class PropertySuggest extends AbstractInputSuggest<string> {
+	private readonly inputEl: HTMLInputElement;
+
+	constructor(
+		app: App,
+		inputEl: HTMLInputElement,
+		private getProperties: () => string[],
+	) {
+		super(app, inputEl);
+		this.inputEl = inputEl;
+	}
+
+	getSuggestions(query: string): string[] {
+		return this.getProperties().filter((p) =>
+			p.toLowerCase().includes(query.toLowerCase()),
+		);
+	}
+
+	renderSuggestion(value: string, el: HTMLElement): void {
+		el.setText(value);
+	}
+
+	selectSuggestion(value: string): void {
+		this.inputEl.value = value;
+		this.inputEl.dispatchEvent(new Event('input'));
+		this.close();
+	}
+}
+
+class CommaPropertySuggest extends AbstractInputSuggest<string> {
+	private readonly inputEl: HTMLInputElement;
+
+	constructor(
+		app: App,
+		inputEl: HTMLInputElement,
+		private getProperties: () => string[],
+	) {
+		super(app, inputEl);
+		this.inputEl = inputEl;
+	}
+
+	getSuggestions(query: string): string[] {
+		const lastToken = query.split(',').pop()?.trim() ?? '';
+		return this.getProperties().filter((p) =>
+			p.toLowerCase().includes(lastToken.toLowerCase()),
+		);
+	}
+
+	renderSuggestion(value: string, el: HTMLElement): void {
+		el.setText(value);
+	}
+
+	selectSuggestion(value: string): void {
+		const current = this.inputEl.value;
+		const parts = current.split(',');
+		parts[parts.length - 1] = ' ' + value;
+		this.inputEl.value = parts.join(',').replace(/^,\s*/, '');
+		this.inputEl.dispatchEvent(new Event('input'));
+		this.close();
+	}
+}
+
 export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 	constructor(app: App, private readonly plugin: SettingsHost) {
 		super(app, plugin);
@@ -17,6 +92,8 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
+
+		const getProperties = () => collectVaultProperties(this.app);
 
 		containerEl.createEl('h2', { text: 'YouTube Note Playlist' });
 
@@ -50,6 +127,7 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 						await this.plugin.refresh();
 					});
 				text.inputEl.style.width = '100%';
+				new CommaPropertySuggest(this.app, text.inputEl, getProperties);
 			});
 
 		new Setting(containerEl)
@@ -65,6 +143,7 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 						await this.plugin.refresh();
 					});
 				text.inputEl.style.width = '100%';
+				new CommaPropertySuggest(this.app, text.inputEl, getProperties);
 			});
 
 		new Setting(containerEl)
@@ -80,6 +159,7 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 						await this.plugin.refresh();
 					});
 				text.inputEl.style.width = '100%';
+				new CommaPropertySuggest(this.app, text.inputEl, getProperties);
 			});
 
 		containerEl.createEl('h3', { text: 'Playlist Note Schema' });
@@ -96,6 +176,7 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						await this.plugin.refresh();
 					});
+				new PropertySuggest(this.app, text.inputEl, getProperties);
 			});
 
 		new Setting(containerEl)
@@ -110,6 +191,7 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						await this.plugin.refresh();
 					});
+				new PropertySuggest(this.app, text.inputEl, getProperties);
 			});
 
 		new Setting(containerEl)
@@ -124,6 +206,37 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						await this.plugin.refresh();
 					});
+				new PropertySuggest(this.app, text.inputEl, getProperties);
+			});
+
+		new Setting(containerEl)
+			.setName('Music note type')
+			.setDesc('The frontmatter type value used to identify music notes.')
+			.addText((text) => {
+				text
+					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.musicNoteType)
+					.setValue(this.plugin.settings.musicNoteType)
+					.onChange(async (value) => {
+						this.plugin.settings.musicNoteType = value.trim();
+						await this.plugin.saveSettings();
+						await this.plugin.refresh();
+					});
+				new PropertySuggest(this.app, text.inputEl, getProperties);
+			});
+
+		new Setting(containerEl)
+			.setName('Playlist note type')
+			.setDesc('The frontmatter type value used to identify playlist notes.')
+			.addText((text) => {
+				text
+					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.playlistNoteType)
+					.setValue(this.plugin.settings.playlistNoteType)
+					.onChange(async (value) => {
+						this.plugin.settings.playlistNoteType = value.trim();
+						await this.plugin.saveSettings();
+						await this.plugin.refresh();
+					});
+				new PropertySuggest(this.app, text.inputEl, getProperties);
 			});
 
 		containerEl.createEl('h3', { text: 'Companion Bases' });

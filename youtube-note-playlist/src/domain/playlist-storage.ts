@@ -30,8 +30,9 @@ export function updatePlaylistNoteContent(
   propertyMapping: YoutubePlaylistPropertyMapping = DEFAULT_PROPERTY_MAPPING,
 ): string {
   const body = stripFrontmatter(existingContent);
+  const noteType = propertyMapping.playlistNoteType ?? PLAYLIST_NOTE_TYPE;
   const frontmatter = serializeFrontmatter({
-    type: PLAYLIST_NOTE_TYPE,
+    type: noteType,
     [propertyMapping.playlistTrackProperty]: dedupeTrackPaths(input.trackPaths),
     [propertyMapping.playlistCoverProperty]: input.coverUrl,
     [propertyMapping.playlistDescriptionProperty]: input.description,

@@ -51,6 +51,8 @@ tracks:
       playlistTrackProperty: 'entries',
       playlistDescriptionProperty: 'summary',
       playlistCoverProperty: 'artwork',
+      musicNoteType: 'music',
+      playlistNoteType: 'music-playlist',
     });
 
     expect(content).toContain('entries:');

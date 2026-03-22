@@ -15,6 +15,8 @@ describe('companion base files', () => {
       playlistTrackProperty: 'entries',
       playlistDescriptionProperty: 'summary',
       playlistCoverProperty: 'artwork',
+      musicNoteType: 'music',
+      playlistNoteType: 'music-playlist',
     });
 
     expect(files).toEqual([

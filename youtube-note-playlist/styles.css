@@ -87,16 +87,18 @@
 }
 
 .ynp-playlist-hero {
-	display: grid;
-	grid-template-columns: minmax(176px, 240px) minmax(0, 1fr);
-	gap: 22px;
+	display: flex;
+	flex-direction: row;
+	gap: 14px;
 	align-items: center;
-	padding: 20px;
+	padding: 14px 16px;
 }
 
 .ynp-hero-cover {
-	aspect-ratio: 1;
-	border-radius: calc(var(--radius-l) + 2px);
+	width: 80px;
+	height: 80px;
+	flex: 0 0 80px;
+	border-radius: var(--radius-m);
 	border: 1px solid var(--background-modifier-border);
 	background-color: var(--background-primary-alt);
 	background-size: cover;
@@ -105,6 +107,14 @@
 	align-items: center;
 	justify-content: center;
 	overflow: hidden;
+}
+
+.ynp-hero-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	flex: 1 1 auto;
 }
 
 .ynp-hero-kicker,
@@ -116,17 +126,27 @@
 }
 
 .ynp-hero-title {
-	margin: 6px 0 0;
-	font-size: clamp(28px, 4vw, 42px);
-	line-height: 1.02;
-	letter-spacing: -0.03em;
+	margin: 0;
+	font-size: var(--font-ui-medium);
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
 	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .ynp-hero-meta,
 .ynp-hero-description,
 .ynp-hero-now-playing {
-	margin-top: 10px;
+	margin-top: 0;
+}
+
+.ynp-hero-description {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .ynp-hero-now-playing {
@@ -134,7 +154,7 @@
 }
 
 .ynp-hero-actions {
-	margin-top: 18px;
+	margin-top: 4px;
 	gap: 6px;
 }
 
@@ -284,8 +304,48 @@
 	background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-primary));
 }
 
+/* Playing indicator: equalizer bars animation */
+@keyframes ynp-eq-bar1 {
+	0%, 100% { transform: scaleY(0.3); }
+	40% { transform: scaleY(1); }
+}
+@keyframes ynp-eq-bar2 {
+	0%, 100% { transform: scaleY(0.6); }
+	20% { transform: scaleY(0.2); }
+	60% { transform: scaleY(1); }
+}
+@keyframes ynp-eq-bar3 {
+	0%, 100% { transform: scaleY(0.5); }
+	50% { transform: scaleY(1); }
+	80% { transform: scaleY(0.2); }
+}
+
+.ynp-eq-bars {
+	display: flex;
+	align-items: flex-end;
+	gap: 2px;
+	height: 14px;
+	padding: 0 2px;
+}
+
+.ynp-eq-bar {
+	width: 3px;
+	border-radius: 1px;
+	background: var(--interactive-accent);
+	transform-origin: bottom;
+}
+
+.ynp-eq-bar:nth-child(1) { animation: ynp-eq-bar1 0.9s ease-in-out infinite; }
+.ynp-eq-bar:nth-child(2) { animation: ynp-eq-bar2 0.8s ease-in-out infinite; }
+.ynp-eq-bar:nth-child(3) { animation: ynp-eq-bar3 1.0s ease-in-out infinite; }
+
 .ynp-track-row.is-drag-source {
 	opacity: 0.45;
+	transform: scale(0.98);
+}
+
+.ynp-track-row.is-drop-target {
+	background: var(--background-modifier-hover);
 }
 
 .ynp-track-row.is-drop-target::before {
@@ -293,10 +353,11 @@
 	position: absolute;
 	left: 0;
 	right: 0;
-	top: -1px;
-	height: 2px;
+	top: -2px;
+	height: 3px;
 	border-radius: 999px;
 	background: var(--interactive-accent);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 30%, transparent);
 }
 
 .ynp-row-grip {
@@ -341,6 +402,39 @@
 	background-size: cover;
 	background-position: center;
 	cursor: pointer;
+	position: relative;
+	overflow: hidden;
+}
+
+.ynp-row-thumb::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: color-mix(in srgb, var(--background-primary) 55%, transparent);
+	opacity: 0;
+	transition: opacity 140ms ease;
+	border-radius: calc(var(--radius-m) - 1px);
+}
+
+.ynp-row-thumb:hover::after {
+	opacity: 1;
+}
+
+.ynp-row-thumb-play {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	transition: opacity 140ms ease;
+	color: var(--text-normal);
+	pointer-events: none;
+	z-index: 1;
+}
+
+.ynp-row-thumb:hover .ynp-row-thumb-play {
+	opacity: 1;
 }
 
 .ynp-row-copy {
@@ -412,13 +506,12 @@
 	justify-content: space-between;
 }
 
-.ynp-view-root.is-narrow .ynp-playlist-hero,
 .ynp-view-root.is-narrow .ynp-now-playing-shell {
 	grid-template-columns: 1fr;
 }
 
-.ynp-view-root.is-narrow .ynp-hero-cover {
-	max-width: 260px;
+.ynp-view-root.is-narrow .ynp-playlist-hero {
+	flex-wrap: nowrap;
 }
 
 .ynp-view-root.is-narrow .ynp-track-row {
@@ -452,8 +545,10 @@
 	align-items: stretch;
 }
 
-.ynp-view-root.is-compact .ynp-hero-title {
-	font-size: 32px;
+.ynp-view-root.is-compact .ynp-hero-cover {
+	width: 64px;
+	height: 64px;
+	flex-basis: 64px;
 }
 
 .ynp-view-root.is-compact .ynp-track-row {
