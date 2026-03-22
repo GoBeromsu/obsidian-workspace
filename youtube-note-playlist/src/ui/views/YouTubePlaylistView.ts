@@ -18,6 +18,8 @@ import type {
 
 export const VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST = 'youtube-note-playlist-view';
 
+type PlaybackState = 'idle' | 'playing' | 'paused';
+
 interface ViewElements {
 	root: HTMLElement;
 	toolbarPanel: HTMLElement;
@@ -31,9 +33,12 @@ export class YouTubePlaylistView extends ItemView {
 	private readonly host: PlaylistViewHost;
 	private elements: ViewElements | null = null;
 	private unsubscribe: (() => void) | null = null;
+	private resizeObserver: ResizeObserver | null = null;
 	private playerSurface: YouTubePlayerSurface | null = null;
 	private dragFromIndex: number | null = null;
 	private actionInFlight = false;
+	private playbackState: PlaybackState = 'idle';
+	private playbackTrackPath: string | null = null;
 
 	constructor(leaf: WorkspaceLeaf, host: PlaylistViewHost) {
 		super(leaf);
@@ -74,9 +79,21 @@ export class YouTubePlaylistView extends ItemView {
 			queuePanel,
 		};
 
-		this.playerSurface = new YouTubePlayerSurface(playerVideo, async () => {
-			await this.runAction('Queued next track', () => this.host.playNext());
+		this.playerSurface = new YouTubePlayerSurface(
+			playerVideo,
+			async () => {
+				await this.runAction('Queued next track', () => this.host.playNext());
+			},
+			(nextPlaybackState) => {
+				this.setPlaybackState(nextPlaybackState);
+			},
+		);
+		this.resizeObserver = new ResizeObserver((entries) => {
+			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
+			this.applyResponsiveClasses(nextWidth);
 		});
+		this.resizeObserver.observe(root);
+		this.applyResponsiveClasses(root.clientWidth);
 
 		this.unsubscribe = this.host.subscribe(() => {
 			this.render();
@@ -88,6 +105,8 @@ export class YouTubePlaylistView extends ItemView {
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
 		this.unsubscribe = null;
+		this.resizeObserver?.disconnect();
+		this.resizeObserver = null;
 		this.playerSurface?.destroy();
 		this.playerSurface = null;
 		this.elements = null;
@@ -104,20 +123,23 @@ export class YouTubePlaylistView extends ItemView {
 		this.renderQueue(state);
 	}
 
+	private applyResponsiveClasses(width: number): void {
+		const root = this.elements?.root;
+		if (!root) return;
+
+		root.classList.toggle('is-narrow', width < 860);
+		root.classList.toggle('is-compact', width < 560);
+	}
+
 	private renderToolbar(state: PlaylistViewState): void {
 		const elements = this.elements;
 		if (!elements) return;
 
 		elements.toolbarPanel.empty();
 
-		const selectedPlaylist = this.getSelectedPlaylist(state);
 		const bar = elements.toolbarPanel.createDiv({ cls: 'ynp-toolbar-bar' });
 		const copy = bar.createDiv({ cls: 'ynp-toolbar-copy' });
 		copy.createDiv({ cls: 'ynp-toolbar-label', text: 'YouTube Playlist' });
-		copy.createDiv({
-			cls: 'ynp-toolbar-description',
-			text: selectedPlaylist?.description ?? 'Select a playlist and keep the track list in focus.',
-		});
 
 		const controls = bar.createDiv({ cls: 'ynp-toolbar-controls' });
 		const select = controls.createEl('select', { cls: 'dropdown ynp-toolbar-select' });
@@ -194,15 +216,13 @@ export class YouTubePlaylistView extends ItemView {
 		}
 
 		const actions = copy.createDiv({ cls: 'ynp-hero-actions' });
-		actions.appendChild(this.createTextButton('Play all', 'play', () => {
-			const firstTrack = state.queue[0];
-			if (!firstTrack) return;
-			void this.runAction(`Playing ${firstTrack.title}`, () => this.host.playTrack(firstTrack.path));
-		}, true));
-
-		actions.appendChild(this.createTextButton('Open note', 'file-text', () => {
-			void this.runAction('', () => this.host.openPlaylist(selectedPlaylist.path), false);
-		}));
+		if (!state.currentTrack && state.queue.length > 0) {
+			actions.appendChild(this.createActionButton('Play all', 'play', () => {
+				const firstTrack = state.queue[0];
+				if (!firstTrack) return;
+				void this.runAction(`Playing ${firstTrack.title}`, () => this.host.playTrack(firstTrack.path));
+			}, { cta: true, iconOnly: true }));
+		}
 
 		actions.appendChild(this.createMenuButton('Playlist actions', 'more-vertical', (event) => {
 			this.openPlaylistMenu(event, selectedPlaylist);
@@ -218,8 +238,15 @@ export class YouTubePlaylistView extends ItemView {
 		const current = state.currentTrack;
 		if (!current) {
 			elements.playerPanel.style.display = 'none';
+			this.playbackTrackPath = null;
+			this.playbackState = 'idle';
 			this.playerSurface?.clear();
 			return;
+		}
+
+		if (this.playbackTrackPath !== current.path) {
+			this.playbackTrackPath = current.path;
+			this.playbackState = state.autoplayEnabled ? 'playing' : 'paused';
 		}
 
 		elements.playerPanel.style.display = '';
@@ -236,27 +263,32 @@ export class YouTubePlaylistView extends ItemView {
 			cls: 'ynp-track-subtitle',
 			text: `${current.artist || 'Unknown artist'} • ${state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'}`,
 		});
-		meta.createDiv({ cls: 'ynp-track-path', text: current.path });
 
 		const controls = summary.createDiv({ cls: 'ynp-control-row ynp-player-controls' });
-		controls.appendChild(this.createTextButton('Previous', 'skip-back', () => {
+		controls.appendChild(this.createActionButton('Previous', 'skip-back', () => {
 			void this.runAction('Moved to previous track', () => this.host.playPrevious());
-		}));
-		controls.appendChild(this.createTextButton('Play', 'play', () => {
-			void this.runAction(`Playing ${current.title}`, () => this.host.playTrack(current.path));
-		}, true));
-		controls.appendChild(this.createTextButton('Next', 'skip-forward', () => {
+		}, { iconOnly: true }));
+		controls.appendChild(this.createActionButton(
+			this.playbackState === 'playing' ? 'Pause current track' : 'Play current track',
+			this.playbackState === 'playing' ? 'pause' : 'play',
+			() => {
+				void this.toggleCurrentPlayback(current);
+			},
+			{ cta: true, iconOnly: true },
+		));
+		controls.appendChild(this.createActionButton('Next', 'skip-forward', () => {
 			void this.runAction('Moved to next track', () => this.host.playNext());
-		}));
-		controls.appendChild(this.createTextButton('Open note', 'file-text', () => {
+		}, { iconOnly: true }));
+		controls.appendChild(this.createActionButton('Open note', 'file-text', () => {
 			void this.runAction('', () => this.host.openNote(current.path), false);
-		}));
-		controls.appendChild(this.createTextButton(
-			state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off',
+		}, { iconOnly: true }));
+		controls.appendChild(this.createActionButton(
+			state.autoplayEnabled ? 'Disable autoplay' : 'Enable autoplay',
 			state.autoplayEnabled ? 'radio' : 'circle',
 			() => {
 				void this.toggleAutoplay(state.autoplayEnabled);
 			},
+			{ iconOnly: true, active: state.autoplayEnabled },
 		));
 
 		const videoShell = playerRail.createDiv({
@@ -277,7 +309,7 @@ export class YouTubePlaylistView extends ItemView {
 		const selectedPlaylist = this.getSelectedPlaylist(state);
 		header.createDiv({
 			cls: 'ynp-section-meta',
-			text: selectedPlaylist ? `${state.queue.length} queued • Drag to reorder` : 'Select a playlist first',
+			text: selectedPlaylist ? `${state.queue.length} tracks` : 'Select a playlist first',
 		});
 
 		if (state.isLoading) {
@@ -300,27 +332,39 @@ export class YouTubePlaylistView extends ItemView {
 			const row = list.createDiv({
 				cls: this.buildRowClass('ynp-track-row', {
 					'is-current': state.currentTrack?.path === track.path,
-					'is-dragging': this.dragFromIndex === index,
+					'is-drag-source': this.dragFromIndex === index,
 				}),
-				attr: { draggable: 'true' },
 			});
 
-			row.addEventListener('dragstart', (event) => {
+			const grip = row.createDiv({ cls: 'ynp-row-grip' });
+			grip.setAttribute('draggable', 'true');
+			grip.setAttribute('aria-label', 'Drag to reorder');
+			grip.setAttribute('title', 'Drag to reorder');
+			setIcon(grip.createDiv({ cls: 'ynp-row-grip-icon' }), 'grip-vertical');
+			grip.createSpan({ cls: 'ynp-row-order', text: String(index + 1).padStart(2, '0') });
+
+			grip.addEventListener('dragstart', (event) => {
 				this.dragFromIndex = index;
-				row.addClass('is-dragging');
+				row.addClass('is-drag-source');
+				event.dataTransfer!.effectAllowed = 'move';
 				event.dataTransfer?.setData('text/plain', String(index));
-				event.dataTransfer?.setDragImage(row, 24, 24);
+				event.dataTransfer?.setDragImage(row, 28, 28);
 			});
-			row.addEventListener('dragover', (event) => {
+			grip.addEventListener('dragend', () => {
+				this.dragFromIndex = null;
+				row.removeClass('is-drag-source');
+				row.removeClass('is-drop-target');
+			});
+			row.addEventListener('dragenter', (event) => {
 				event.preventDefault();
 				row.addClass('is-drop-target');
 			});
-			row.addEventListener('dragleave', () => {
-				row.removeClass('is-drop-target');
+			row.addEventListener('dragover', (event) => {
+				event.preventDefault();
+				if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+				row.addClass('is-drop-target');
 			});
-			row.addEventListener('dragend', () => {
-				this.dragFromIndex = null;
-				row.removeClass('is-dragging');
+			row.addEventListener('dragleave', () => {
 				row.removeClass('is-drop-target');
 			});
 			row.addEventListener('drop', (event) => {
@@ -333,10 +377,6 @@ export class YouTubePlaylistView extends ItemView {
 				}
 				void this.runAction('Saved new queue order', () => this.host.moveTrackInPlaylist(fromIndex, index));
 			});
-
-			const grip = row.createDiv({ cls: 'ynp-row-grip' });
-			setIcon(grip, 'grip-vertical');
-			grip.createSpan({ cls: 'ynp-row-order', text: String(index + 1).padStart(2, '0') });
 
 			const thumb = row.createDiv({ cls: 'ynp-row-thumb' });
 			thumb.style.backgroundImage = `url("${track.thumbnailUrl}")`;
@@ -357,7 +397,10 @@ export class YouTubePlaylistView extends ItemView {
 
 			const rowActions = row.createDiv({ cls: 'ynp-row-actions' });
 			if (state.currentTrack?.path === track.path) {
-				rowActions.createDiv({ cls: 'ynp-row-state', text: 'Playing' });
+				const currentIcon = rowActions.createDiv({ cls: 'ynp-row-state ynp-row-state-icon' });
+				currentIcon.setAttribute('aria-label', 'Playing');
+				currentIcon.setAttribute('title', 'Playing');
+				setIcon(currentIcon, 'volume-2');
 			}
 			rowActions.appendChild(this.createMenuButton('Track actions', 'more-vertical', (event) => {
 				this.openTrackMenu(event, track);
@@ -490,18 +533,30 @@ export class YouTubePlaylistView extends ItemView {
 		state.createDiv({ cls: 'ynp-empty-copy', text: copy });
 	}
 
-	private createTextButton(
+	private createActionButton(
 		label: string,
 		icon: string,
 		onClick: () => void,
-		cta = false,
+		options: {
+			active?: boolean;
+			cta?: boolean;
+			iconOnly?: boolean;
+		} = {},
 	): HTMLButtonElement {
 		const button = document.createElement('button');
 		button.type = 'button';
-		button.className = this.buildRowClass('ynp-button', { 'mod-cta': cta });
+		button.className = this.buildRowClass('ynp-button', {
+			'is-active': Boolean(options.active),
+			'is-icon-only': Boolean(options.iconOnly),
+			'mod-cta': Boolean(options.cta),
+		});
+		button.setAttribute('aria-label', label);
+		button.setAttribute('title', label);
 		const iconEl = button.createSpan({ cls: 'ynp-button-icon' });
 		setIcon(iconEl, icon);
-		button.createSpan({ cls: 'ynp-button-label', text: label });
+		if (!options.iconOnly) {
+			button.createSpan({ cls: 'ynp-button-label', text: label });
+		}
 		button.addEventListener('click', (event) => {
 			event.preventDefault();
 			event.stopPropagation();
@@ -538,6 +593,7 @@ export class YouTubePlaylistView extends ItemView {
 		button.type = 'button';
 		button.className = 'clickable-icon ynp-icon-button';
 		button.setAttribute('aria-label', label);
+		button.setAttribute('title', label);
 		setIcon(button, icon);
 		button.addEventListener('click', (event) => {
 			event.preventDefault();
@@ -549,6 +605,31 @@ export class YouTubePlaylistView extends ItemView {
 
 	private buildRowClass(base: string, flags: Record<string, boolean>): string {
 		return [base, ...Object.entries(flags).filter(([, enabled]) => enabled).map(([name]) => name)].join(' ');
+	}
+
+	private setPlaybackState(nextPlaybackState: PlaybackState): void {
+		if (this.playbackState === nextPlaybackState) return;
+		this.playbackState = nextPlaybackState;
+		this.render();
+	}
+
+	private async toggleCurrentPlayback(current: PlaylistTrack): Promise<void> {
+		if (this.playbackState === 'playing') {
+			const handled = await this.playerSurface?.pause();
+			if (handled) {
+				this.setPlaybackState('paused');
+			}
+			return;
+		}
+
+		const handled = await this.playerSurface?.play();
+		if (handled) {
+			this.setPlaybackState('playing');
+			return;
+		}
+
+		await this.host.playTrack(current.path);
+		this.setPlaybackState('playing');
 	}
 
 	private async toggleAutoplay(currentValue: boolean): Promise<void> {
@@ -661,6 +742,7 @@ class YouTubePlayerSurface {
 	constructor(
 		host: HTMLElement,
 		private readonly onEnded: () => Promise<void>,
+		private readonly onPlaybackChange: (playbackState: PlaybackState) => void,
 	) {
 		this.host = host;
 	}
@@ -685,6 +767,15 @@ class YouTubePlayerSurface {
 					},
 					events: {
 						onStateChange: (event: { data: number }) => {
+							if (event.data === api.PlayerState.PLAYING) {
+								this.onPlaybackChange('playing');
+								return;
+							}
+
+							if (event.data === api.PlayerState.PAUSED || event.data === api.PlayerState.ENDED) {
+								this.onPlaybackChange('paused');
+							}
+
 							if (event.data === api.PlayerState.ENDED) {
 								void this.onEnded();
 							}
@@ -698,14 +789,39 @@ class YouTubePlayerSurface {
 			this.currentVideoId = track.videoId;
 			this.currentAutoplay = autoplayEnabled;
 			this.clearFallback();
+			this.onPlaybackChange(autoplayEnabled ? 'playing' : 'paused');
 		} catch {
 			this.renderFallback(track, autoplayEnabled);
 		}
 	}
 
+	async play(): Promise<boolean> {
+		if (this.player) {
+			this.player.playVideo();
+			return true;
+		}
+
+		if (this.fallbackFrame) {
+			this.fallbackFrame.src = this.ensureAutoplay(this.fallbackFrame.src, true);
+			return true;
+		}
+
+		return false;
+	}
+
+	async pause(): Promise<boolean> {
+		if (!this.player) {
+			return false;
+		}
+
+		this.player.pauseVideo();
+		return true;
+	}
+
 	clear(): void {
 		this.currentVideoId = null;
 		this.currentAutoplay = false;
+		this.onPlaybackChange('idle');
 		this.player?.destroy();
 		this.player = null;
 		this.clearFallback();
@@ -744,11 +860,22 @@ class YouTubePlayerSurface {
 		this.fallbackFrame = frame;
 		this.currentVideoId = track.videoId;
 		this.currentAutoplay = autoplayEnabled;
+		this.onPlaybackChange(autoplayEnabled ? 'playing' : 'paused');
 	}
 
 	private clearFallback(): void {
 		this.fallbackFrame?.remove();
 		this.fallbackFrame = null;
+	}
+
+	private ensureAutoplay(src: string, autoplayEnabled: boolean): string {
+		try {
+			const url = new URL(src);
+			url.searchParams.set('autoplay', autoplayEnabled ? '1' : '0');
+			return url.toString();
+		} catch {
+			return src;
+		}
 	}
 }
 
@@ -765,12 +892,16 @@ interface YouTubeApiNamespace {
 	) => YouTubePlayerInstance;
 	PlayerState: {
 		ENDED: number;
+		PAUSED: number;
+		PLAYING: number;
 	};
 }
 
 interface YouTubePlayerInstance {
 	destroy(): void;
 	loadVideoById(videoId: string): void;
+	pauseVideo(): void;
+	playVideo(): void;
 	stopVideo(): void;
 }
 

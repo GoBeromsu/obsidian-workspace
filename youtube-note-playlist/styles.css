@@ -10,6 +10,11 @@
 	background: var(--background-primary);
 }
 
+.ynp-view-root.is-compact {
+	gap: 14px;
+	padding: 12px;
+}
+
 .ynp-pane-section {
 	display: flex;
 	flex-direction: column;
@@ -130,6 +135,7 @@
 
 .ynp-hero-actions {
 	margin-top: 18px;
+	gap: 6px;
 }
 
 .ynp-section-header {
@@ -195,32 +201,31 @@
 
 .ynp-player-controls {
 	margin-top: 10px;
+	gap: 6px;
 }
 
 .ynp-button {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	padding: 7px 12px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 999px;
-	background: var(--background-primary);
-	color: var(--text-normal);
+	justify-content: center;
+	height: var(--input-height);
+	padding: 0 12px;
+	border-radius: var(--radius-m);
+	white-space: nowrap;
 	cursor: pointer;
 }
 
-.ynp-button:hover {
-	background: var(--background-modifier-hover);
+.ynp-button.is-icon-only {
+	width: var(--input-height);
+	padding: 0;
+	flex: 0 0 var(--input-height);
 }
 
-.ynp-button.mod-cta {
-	border-color: var(--interactive-accent);
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-.ynp-button.mod-cta:hover {
-	background: var(--interactive-accent-hover);
+.ynp-button.is-active:not(.mod-cta) {
+	color: var(--interactive-accent);
+	border-color: color-mix(in srgb, var(--interactive-accent) 45%, var(--background-modifier-border));
+	background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary));
 }
 
 .ynp-button-icon {
@@ -263,6 +268,7 @@
 	display: grid;
 	grid-template-columns: 44px 152px minmax(0, 1fr) auto;
 	gap: 14px;
+	position: relative;
 	align-items: center;
 	padding: 12px 2px;
 	border-bottom: 1px solid var(--background-modifier-border);
@@ -278,12 +284,19 @@
 	background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-primary));
 }
 
-.ynp-track-row.is-dragging {
-	opacity: 0.55;
+.ynp-track-row.is-drag-source {
+	opacity: 0.45;
 }
 
-.ynp-track-row.is-drop-target {
-	border-color: var(--interactive-accent);
+.ynp-track-row.is-drop-target::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: -1px;
+	height: 2px;
+	border-radius: 999px;
+	background: var(--interactive-accent);
 }
 
 .ynp-row-grip {
@@ -291,9 +304,29 @@
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
+	width: 30px;
+	padding: 4px 0;
 	gap: 3px;
 	color: var(--text-faint);
 	cursor: grab;
+	border-radius: var(--radius-s);
+	transition: color 120ms ease, background 120ms ease;
+}
+
+.ynp-row-grip:hover,
+.ynp-track-row.is-drag-source .ynp-row-grip {
+	color: var(--text-muted);
+	background: var(--background-modifier-hover);
+}
+
+.ynp-row-grip:active {
+	cursor: grabbing;
+}
+
+.ynp-row-grip-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .ynp-row-order {
@@ -318,13 +351,20 @@
 .ynp-row-actions {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 4px;
+	color: var(--text-muted);
 }
 
 .ynp-row-state {
 	font-size: var(--font-ui-smaller);
 	font-weight: 600;
 	color: var(--interactive-accent);
+}
+
+.ynp-row-state-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .ynp-icon-button {
@@ -362,40 +402,62 @@
 	color: var(--text-normal);
 }
 
-@media (max-width: 900px) {
-	.ynp-view-root {
-		padding: 14px;
-	}
-
-	.ynp-playlist-hero,
-	.ynp-now-playing-shell {
-		grid-template-columns: 1fr;
-	}
-
-	.ynp-hero-cover {
-		max-width: 260px;
-	}
+.ynp-view-root.is-narrow .ynp-toolbar-bar {
+	flex-direction: column;
+	align-items: stretch;
 }
 
-@media (max-width: 720px) {
-	.ynp-toolbar-bar,
-	.ynp-playlist-hero,
-	.ynp-now-playing-shell {
-		padding: 12px;
-	}
+.ynp-view-root.is-narrow .ynp-toolbar-controls {
+	width: 100%;
+	justify-content: space-between;
+}
 
-	.ynp-section-header {
-		flex-direction: column;
-		align-items: stretch;
-	}
+.ynp-view-root.is-narrow .ynp-playlist-hero,
+.ynp-view-root.is-narrow .ynp-now-playing-shell {
+	grid-template-columns: 1fr;
+}
 
-	.ynp-track-row {
-		grid-template-columns: 34px 110px minmax(0, 1fr) auto;
-		gap: 10px;
-	}
+.ynp-view-root.is-narrow .ynp-hero-cover {
+	max-width: 260px;
+}
 
-	.ynp-toolbar-select {
-		min-width: 0;
-		width: 100%;
-	}
+.ynp-view-root.is-narrow .ynp-track-row {
+	grid-template-columns: 34px 110px minmax(0, 1fr) auto;
+	gap: 10px;
+}
+
+.ynp-view-root.is-compact .ynp-toolbar-bar,
+.ynp-view-root.is-compact .ynp-playlist-hero,
+.ynp-view-root.is-compact .ynp-now-playing-shell {
+	padding: 12px;
+}
+
+.ynp-view-root.is-compact .ynp-toolbar-description,
+.ynp-view-root.is-compact .ynp-track-path {
+	display: none;
+}
+
+.ynp-view-root.is-compact .ynp-toolbar-controls {
+	width: 100%;
+}
+
+.ynp-view-root.is-compact .ynp-toolbar-select {
+	flex: 1 1 auto;
+	min-width: 0;
+	width: 100%;
+}
+
+.ynp-view-root.is-compact .ynp-section-header {
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.ynp-view-root.is-compact .ynp-hero-title {
+	font-size: 32px;
+}
+
+.ynp-view-root.is-compact .ynp-track-row {
+	grid-template-columns: 28px 84px minmax(0, 1fr) auto;
+	gap: 8px;
+	padding: 10px 0;
 }
