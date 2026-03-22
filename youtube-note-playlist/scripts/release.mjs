@@ -43,7 +43,6 @@ if (!RELEASE_LEVELS.has(level)) {
 
 const pnpm = getPnpmCommand();
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const headBeforeVersion = runCapture('git', ['rev-parse', 'HEAD']);
 if (pkg.scripts?.['sync:check']) {
   run(pnpm, ['sync:check']);
 }
@@ -59,6 +58,7 @@ if (fs.existsSync('manifest.json')) {
   }
 }
 
+const headBeforeVersion = runCapture('git', ['rev-parse', 'HEAD']);
 run(pnpm, ['version', level]);
 
 const headAfterVersion = runCapture('git', ['rev-parse', 'HEAD']);
