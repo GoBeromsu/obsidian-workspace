@@ -21,6 +21,20 @@ function run(command, args) {
   }
 }
 
+function runCapture(command, args) {
+  const result = spawnSync(command, args, { encoding: 'utf8' });
+  if (result.error) {
+    console.error(`Failed to run ${command}: ${result.error.message}`);
+    process.exit(1);
+  }
+  if ((result.status ?? 0) !== 0) {
+    process.stderr.write(result.stderr ?? '');
+    process.exit(result.status ?? 1);
+  }
+
+  return (result.stdout ?? '').trim();
+}
+
 const level = process.argv[2];
 if (!RELEASE_LEVELS.has(level)) {
   console.error(`Usage: node scripts/release.mjs <patch|minor|major>`);
@@ -29,6 +43,7 @@ if (!RELEASE_LEVELS.has(level)) {
 
 const pnpm = getPnpmCommand();
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const headBeforeVersion = runCapture('git', ['rev-parse', 'HEAD']);
 if (pkg.scripts?.['sync:check']) {
   run(pnpm, ['sync:check']);
 }
@@ -45,3 +60,17 @@ if (fs.existsSync('manifest.json')) {
 }
 
 run(pnpm, ['version', level]);
+
+const headAfterVersion = runCapture('git', ['rev-parse', 'HEAD']);
+if (headAfterVersion === headBeforeVersion) {
+  const nextPkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  const tagPrefix = runCapture('npm', ['config', 'get', 'tag-version-prefix', '--location=project']);
+  const tagName = `${tagPrefix}${nextPkg.version}`;
+  const releasableFiles = ['package.json', 'manifest.json', 'versions.json'].filter((file) => fs.existsSync(file));
+
+  run('git', ['add', ...releasableFiles]);
+  run('git', ['commit', '-m', `chore(release): ${nextPkg.version}`]);
+  run('git', ['tag', tagName]);
+  run('git', ['push']);
+  run('git', ['push', '--tags']);
+}
