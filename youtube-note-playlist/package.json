@@ -1,6 +1,6 @@
 {
   "name": "youtube-note-playlist",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Play note-backed YouTube playlists inside an Obsidian view",
   "main": "main.js",
   "packageManager": "pnpm@10.32.1",
