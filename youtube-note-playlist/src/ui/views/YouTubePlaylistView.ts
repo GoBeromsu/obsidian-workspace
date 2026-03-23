@@ -26,6 +26,9 @@ interface ViewElements {
 	heroPanel: HTMLElement;
 	playerPanel: HTMLElement;
 	playerVideo: HTMLElement;
+	progressBar: HTMLElement | null;
+	progressFill: HTMLElement | null;
+	progressTime: HTMLElement | null;
 	queuePanel: HTMLElement;
 }
 
@@ -39,6 +42,7 @@ export class YouTubePlaylistView extends ItemView {
 	private actionInFlight = false;
 	private playbackState: PlaybackState = 'idle';
 	private playbackTrackPath: string | null = null;
+	private progressIntervalId: number | null = null;
 
 	constructor(leaf: WorkspaceLeaf, host: PlaylistViewHost) {
 		super(leaf);
@@ -76,6 +80,9 @@ export class YouTubePlaylistView extends ItemView {
 			heroPanel,
 			playerPanel,
 			playerVideo,
+			progressBar: null,
+			progressFill: null,
+			progressTime: null,
 			queuePanel,
 		};
 
@@ -107,6 +114,7 @@ export class YouTubePlaylistView extends ItemView {
 		this.unsubscribe = null;
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = null;
+		this.stopProgressInterval();
 		this.playerSurface?.destroy();
 		this.playerSurface = null;
 		this.elements = null;
@@ -233,6 +241,13 @@ export class YouTubePlaylistView extends ItemView {
 		const elements = this.elements;
 		if (!elements) return;
 
+		// Preserve playerVideo before emptying — it holds the live YouTube iframe.
+		// Detaching and re-attaching the element destroys the iframe and breaks loadVideoById.
+		const savedVideo = elements.playerVideo;
+		if (savedVideo.parentElement) {
+			savedVideo.parentElement.removeChild(savedVideo);
+		}
+
 		elements.playerPanel.empty();
 
 		const current = state.currentTrack;
@@ -240,6 +255,10 @@ export class YouTubePlaylistView extends ItemView {
 			elements.playerPanel.style.display = 'none';
 			this.playbackTrackPath = null;
 			this.playbackState = 'idle';
+			elements.progressBar = null;
+			elements.progressFill = null;
+			elements.progressTime = null;
+			this.stopProgressInterval();
 			this.playerSurface?.clear();
 			return;
 		}
@@ -291,10 +310,29 @@ export class YouTubePlaylistView extends ItemView {
 			{ iconOnly: true, active: state.autoplayEnabled },
 		));
 
+		// Progress bar
+		const progressShell = summary.createDiv({ cls: 'ynp-progress-shell' });
+		const progressBar = progressShell.createDiv({ cls: 'ynp-progress-bar' });
+		const progressFill = progressBar.createDiv({ cls: 'ynp-progress-fill' });
+		const progressTime = progressShell.createDiv({ cls: 'ynp-progress-time' });
+		elements.progressBar = progressBar;
+		elements.progressFill = progressFill;
+		elements.progressTime = progressTime;
+
+		progressBar.addEventListener('click', (event) => {
+			const rect = progressBar.getBoundingClientRect();
+			const ratio = (event.clientX - rect.left) / rect.width;
+			this.playerSurface?.seekTo(ratio);
+		});
+
+		this.syncProgressBar();
+		this.startProgressInterval();
+
 		const videoShell = playerRail.createDiv({
 			cls: 'ynp-player-video-shell is-collapsed',
 		});
-		videoShell.appendChild(elements.playerVideo);
+		// Re-attach the preserved video element — iframe stays alive, no reload
+		videoShell.appendChild(savedVideo);
 		void this.playerSurface?.render(current, state.autoplayEnabled);
 	}
 
@@ -614,7 +652,40 @@ export class YouTubePlaylistView extends ItemView {
 	private setPlaybackState(nextPlaybackState: PlaybackState): void {
 		if (this.playbackState === nextPlaybackState) return;
 		this.playbackState = nextPlaybackState;
+		if (nextPlaybackState === 'playing') {
+			this.startProgressInterval();
+		} else {
+			this.stopProgressInterval();
+			this.syncProgressBar();
+		}
 		this.render();
+	}
+
+	private startProgressInterval(): void {
+		this.stopProgressInterval();
+		if (this.playbackState !== 'playing') return;
+		this.progressIntervalId = window.setInterval(() => {
+			this.syncProgressBar();
+		}, 1000);
+	}
+
+	private stopProgressInterval(): void {
+		if (this.progressIntervalId !== null) {
+			window.clearInterval(this.progressIntervalId);
+			this.progressIntervalId = null;
+		}
+	}
+
+	private syncProgressBar(): void {
+		const elements = this.elements;
+		if (!elements?.progressFill || !elements.progressTime) return;
+
+		const currentTime = this.playerSurface?.getCurrentTime() ?? 0;
+		const duration = this.playerSurface?.getDuration() ?? 0;
+
+		const ratio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+		elements.progressFill.style.width = `${(ratio * 100).toFixed(2)}%`;
+		elements.progressTime.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
 	}
 
 	private async toggleCurrentPlayback(current: PlaylistTrack): Promise<void> {
@@ -822,6 +893,21 @@ class YouTubePlayerSurface {
 		return true;
 	}
 
+	getCurrentTime(): number {
+		return this.player?.getCurrentTime() ?? 0;
+	}
+
+	getDuration(): number {
+		return this.player?.getDuration() ?? 0;
+	}
+
+	seekTo(ratio: number): void {
+		const duration = this.getDuration();
+		if (this.player && duration > 0) {
+			this.player.seekTo(ratio * duration, true);
+		}
+	}
+
 	clear(): void {
 		this.currentVideoId = null;
 		this.currentAutoplay = false;
@@ -903,9 +989,12 @@ interface YouTubeApiNamespace {
 
 interface YouTubePlayerInstance {
 	destroy(): void;
+	getCurrentTime(): number;
+	getDuration(): number;
 	loadVideoById(videoId: string): void;
 	pauseVideo(): void;
 	playVideo(): void;
+	seekTo(seconds: number, allowSeekAhead: boolean): void;
 	stopVideo(): void;
 }
 
@@ -914,6 +1003,13 @@ declare global {
 		YT?: YouTubeApiNamespace;
 		onYouTubeIframeAPIReady?: () => void;
 	}
+}
+
+function formatTime(seconds: number): string {
+	const s = Math.floor(seconds);
+	const mins = Math.floor(s / 60);
+	const secs = s % 60;
+	return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
 let youtubeApiPromise: Promise<YouTubeApiNamespace> | null = null;

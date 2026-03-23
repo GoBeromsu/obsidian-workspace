@@ -224,6 +224,42 @@
 	gap: 6px;
 }
 
+.ynp-progress-shell {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-top: 10px;
+}
+
+.ynp-progress-bar {
+	position: relative;
+	height: 4px;
+	border-radius: 2px;
+	background: var(--background-modifier-border);
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.ynp-progress-bar:hover {
+	height: 6px;
+	border-radius: 3px;
+}
+
+.ynp-progress-fill {
+	height: 100%;
+	width: 0%;
+	border-radius: inherit;
+	background: var(--interactive-accent);
+	pointer-events: none;
+	transition: width 0.25s linear;
+}
+
+.ynp-progress-time {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	line-height: 1;
+}
+
 .ynp-button {
 	display: inline-flex;
 	align-items: center;
