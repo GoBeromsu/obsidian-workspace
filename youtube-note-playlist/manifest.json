@@ -1,7 +1,7 @@
 {
 	"id": "youtube-note-playlist",
 	"name": "YouTube Note Playlist",
-	"version": "0.2.3",
+	"version": "0.2.4",
 	"minAppVersion": "0.15.0",
 	"description": "Build and play note-backed YouTube playlists inside Obsidian.",
 	"author": "Beomsu Koh",
