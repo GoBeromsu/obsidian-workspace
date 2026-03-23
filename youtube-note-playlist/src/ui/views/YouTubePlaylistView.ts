@@ -15,6 +15,7 @@ import type {
 	PlaylistViewHost,
 	PlaylistViewState,
 } from '../playlist-view-model';
+import type { AudioCacheService } from '../../domain/audio-cache';
 import { buildObsidianProxyUrl } from '../../utils/youtube';
 
 export const VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST = 'youtube-note-playlist-view';
@@ -96,6 +97,11 @@ export class YouTubePlaylistView extends ItemView {
 				this.setPlaybackState(nextPlaybackState);
 			},
 		);
+
+		const cacheService = this.host.getAudioCacheService?.() ?? null;
+		if (cacheService) {
+			this.playerSurface.setAudioCacheService(cacheService);
+		}
 		this.resizeObserver = new ResizeObserver((entries) => {
 			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
 			this.applyResponsiveClasses(nextWidth);
@@ -827,6 +833,10 @@ class YouTubePlayerSurface {
 	private fallbackFrame: HTMLIFrameElement | null = null;
 	private player: YouTubePlayerInstance | null = null;
 	private playerRoot: HTMLElement | null = null;
+	private audioElement: HTMLAudioElement | null = null;
+	private audioCacheService: AudioCacheService | null = null;
+	private hasReceivedPlayingState = false;
+	private audioFallbackAttempted = false;
 
 	constructor(
 		host: HTMLElement,
@@ -834,6 +844,10 @@ class YouTubePlayerSurface {
 		private readonly onPlaybackChange: (playbackState: PlaybackState) => void,
 	) {
 		this.host = host;
+	}
+
+	setAudioCacheService(service: AudioCacheService): void {
+		this.audioCacheService = service;
 	}
 
 	async render(track: PlaylistTrack, autoplayEnabled: boolean): Promise<void> {
@@ -863,13 +877,27 @@ class YouTubePlayerSurface {
 				},
 				events: {
 					onReady: () => {
+						this.hasReceivedPlayingState = false;
+						this.audioFallbackAttempted = false;
 						this.activateTrack(track.videoId, autoplayEnabled);
+						if (autoplayEnabled) {
+							window.setTimeout(() => {
+								if (this.currentVideoId === track.videoId && !this.hasReceivedPlayingState && !this.audioFallbackAttempted) {
+									this.audioFallbackAttempted = true;
+									void this.renderAudioFallback(track, autoplayEnabled);
+								}
+							}, 5000);
+						}
 					},
 					onError: () => {
-						this.renderFallback(track, autoplayEnabled);
+						if (!this.audioFallbackAttempted) {
+							this.audioFallbackAttempted = true;
+							void this.renderAudioFallback(track, autoplayEnabled);
+						}
 					},
 					onStateChange: (event: { data: number }) => {
 						if (event.data === api.PlayerState.PLAYING) {
+							this.hasReceivedPlayingState = true;
 							this.onPlaybackChange('playing');
 							return;
 						}
@@ -885,11 +913,15 @@ class YouTubePlayerSurface {
 				},
 			});
 		} catch {
-			this.renderFallback(track, autoplayEnabled);
+			void this.renderAudioFallback(track, autoplayEnabled);
 		}
 	}
 
 	async play(): Promise<boolean> {
+		if (this.audioElement) {
+			void this.audioElement.play();
+			return true;
+		}
 		if (this.player) {
 			try { this.player.playVideo(); } catch { /* player not ready */ }
 			return true;
@@ -904,6 +936,10 @@ class YouTubePlayerSurface {
 	}
 
 	async pause(): Promise<boolean> {
+		if (this.audioElement) {
+			this.audioElement.pause();
+			return true;
+		}
 		if (this.player) {
 			try { this.player.pauseVideo(); } catch { /* player not ready */ }
 			return true;
@@ -913,17 +949,19 @@ class YouTubePlayerSurface {
 	}
 
 	getCurrentTime(): number {
+		if (this.audioElement) return this.audioElement.currentTime;
 		if (!this.player) return 0;
 		try { return this.player.getCurrentTime(); } catch { return 0; }
 	}
 
 	getDuration(): number {
+		if (this.audioElement) return this.audioElement.duration || 0;
 		if (!this.player) return 0;
 		try { return this.player.getDuration(); } catch { return 0; }
 	}
 
 	isUsingFallback(): boolean {
-		return this.player === null && this.fallbackFrame !== null;
+		return this.player === null && this.fallbackFrame !== null && this.audioElement === null;
 	}
 
 	private activateTrack(videoId: string, autoplayEnabled: boolean): void {
@@ -934,6 +972,11 @@ class YouTubePlayerSurface {
 	}
 
 	seekTo(ratio: number): void {
+		if (this.audioElement) {
+			const duration = this.audioElement.duration || 0;
+			if (duration > 0) this.audioElement.currentTime = ratio * duration;
+			return;
+		}
 		const duration = this.getDuration();
 		if (this.player && duration > 0) {
 			this.player.seekTo(ratio * duration, true);
@@ -946,6 +989,8 @@ class YouTubePlayerSurface {
 		this.onPlaybackChange('idle');
 		this.player?.destroy();
 		this.player = null;
+		this.audioElement?.pause();
+		this.audioElement = null;
 		this.clearFallback();
 		this.playerRoot?.remove();
 		this.playerRoot = null;
@@ -955,8 +1000,62 @@ class YouTubePlayerSurface {
 		this.clearFallback();
 		this.player?.destroy();
 		this.player = null;
+		this.audioElement?.pause();
+		this.audioElement = null;
 		this.playerRoot?.remove();
 		this.playerRoot = null;
+	}
+
+	private async renderAudioFallback(track: PlaylistTrack, autoplayEnabled: boolean): Promise<void> {
+		this.host.empty();
+		this.player?.destroy();
+		this.player = null;
+		this.playerRoot = null;
+		this.clearFallback();
+
+		if (!this.audioCacheService) {
+			this.renderFallback(track, autoplayEnabled);
+			return;
+		}
+
+		const videoId = track.videoId;
+
+		if (this.audioCacheService.hasCached(videoId)) {
+			this.mountAudio(this.audioCacheService.getFileUrl(videoId), autoplayEnabled);
+			this.activateTrack(videoId, autoplayEnabled);
+			return;
+		}
+
+		this.onPlaybackChange('paused');
+		this.currentVideoId = videoId;
+		this.currentAutoplay = autoplayEnabled;
+
+		try {
+			await this.audioCacheService.download(videoId, () => {});
+			this.mountAudio(this.audioCacheService.getFileUrl(videoId), autoplayEnabled);
+			this.activateTrack(videoId, autoplayEnabled);
+		} catch {
+			// yt-dlp download failed — falling back to proxy iframe
+			this.renderFallback(track, autoplayEnabled);
+		}
+	}
+
+	private mountAudio(url: string, autoplay: boolean): void {
+		this.audioElement?.pause();
+		this.audioElement?.remove();
+
+		const audio = new Audio(url);
+		audio.addEventListener('ended', () => {
+			this.onPlaybackChange('paused');
+			void this.onEnded();
+		});
+		audio.addEventListener('play', () => this.onPlaybackChange('playing'));
+		audio.addEventListener('pause', () => this.onPlaybackChange('paused'));
+		this.audioElement = audio;
+
+		if (autoplay) {
+			void audio.play();
+		}
 	}
 
 	private mountPlayerRoot(): void {

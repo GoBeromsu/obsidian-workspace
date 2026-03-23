@@ -1,4 +1,5 @@
 import { normalizePath, Plugin, TFile, WorkspaceLeaf } from 'obsidian';
+import { AudioCacheService } from './domain/audio-cache';
 import { buildCompanionBaseFiles, MUSIC_BASE_NAME, PLAYLISTS_BASE_NAME } from './domain/base-files';
 import { DEFAULT_PROPERTY_MAPPING, DEFAULT_SETTINGS, normalizePropertyList, normalizePropertyName } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
@@ -35,10 +36,16 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   private currentTrackPath: string | null = null;
   private isLoading = false;
   private errorMessage: string | null = null;
+  private audioCacheService: AudioCacheService | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     await this.refreshIndex();
+
+    const basePath = (this.app.vault.adapter as { getBasePath?(): string }).getBasePath?.() ?? '';
+    if (basePath && AudioCacheService.isAvailable()) {
+      this.audioCacheService = new AudioCacheService(basePath);
+    }
 
     this.registerView(
       VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST,
@@ -362,6 +369,10 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
 
   async toggleAutoplay(): Promise<void> {
     await this.setAutoplayEnabled(!this.settings.autoplayEnabled);
+  }
+
+  getAudioCacheService(): AudioCacheService | null {
+    return this.audioCacheService;
   }
 
   async setAutoplayEnabled(enabled: boolean): Promise<void> {

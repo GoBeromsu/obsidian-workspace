@@ -1,3 +1,5 @@
+import type { AudioCacheService } from '../domain/audio-cache';
+
 export interface PlaylistSummary {
 	path: string;
 	title: string;
@@ -56,4 +58,5 @@ export interface PlaylistViewHost {
 	refreshCompanionBases?(): Promise<void>;
 	toggleAutoplay?(): Promise<void>;
 	setAutoplayEnabled?(enabled: boolean): Promise<void>;
+	getAudioCacheService?(): AudioCacheService | null;
 }
