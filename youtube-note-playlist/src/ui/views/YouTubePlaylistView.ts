@@ -329,7 +329,7 @@ export class YouTubePlaylistView extends ItemView {
 		this.startProgressInterval();
 
 		const videoShell = playerRail.createDiv({
-			cls: 'ynp-player-video-shell is-collapsed',
+			cls: 'ynp-player-video-shell',
 		});
 		// Re-attach the preserved video element — iframe stays alive, no reload
 		videoShell.appendChild(savedVideo);
@@ -841,6 +841,12 @@ class YouTubePlayerSurface {
 						rel: 0,
 					},
 					events: {
+						onReady: () => {
+							this.currentVideoId = track.videoId;
+							this.currentAutoplay = autoplayEnabled;
+							this.clearFallback();
+							this.onPlaybackChange(autoplayEnabled ? 'playing' : 'paused');
+						},
 						onStateChange: (event: { data: number }) => {
 							if (event.data === api.PlayerState.PLAYING) {
 								this.onPlaybackChange('playing');
@@ -859,12 +865,11 @@ class YouTubePlayerSurface {
 				});
 			} else {
 				this.player.loadVideoById(track.videoId);
+				this.currentVideoId = track.videoId;
+				this.currentAutoplay = autoplayEnabled;
+				this.clearFallback();
+				this.onPlaybackChange(autoplayEnabled ? 'playing' : 'paused');
 			}
-
-			this.currentVideoId = track.videoId;
-			this.currentAutoplay = autoplayEnabled;
-			this.clearFallback();
-			this.onPlaybackChange(autoplayEnabled ? 'playing' : 'paused');
 		} catch {
 			this.renderFallback(track, autoplayEnabled);
 		}
@@ -894,11 +899,17 @@ class YouTubePlayerSurface {
 	}
 
 	getCurrentTime(): number {
-		return this.player?.getCurrentTime() ?? 0;
+		if (this.player && typeof this.player.getCurrentTime === 'function') {
+			try { return this.player.getCurrentTime(); } catch { return 0; }
+		}
+		return 0;
 	}
 
 	getDuration(): number {
-		return this.player?.getDuration() ?? 0;
+		if (this.player && typeof this.player.getDuration === 'function') {
+			try { return this.player.getDuration(); } catch { return 0; }
+		}
+		return 0;
 	}
 
 	seekTo(ratio: number): void {
@@ -976,6 +987,7 @@ interface YouTubeApiNamespace {
 			videoId: string;
 			playerVars: Record<string, string | number>;
 			events: {
+				onReady?: () => void;
 				onStateChange: (event: { data: number }) => void;
 			};
 		},

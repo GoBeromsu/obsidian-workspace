@@ -485,8 +485,11 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
 
       const selected = this.resolveSelectedPlaylistPath();
       if (this.library.playlists.length > 0 && selected !== this.settings.lastPlaylistPath) {
-        this.settings.lastPlaylistPath = selected;
-        await this.saveSettings();
+        if (!this.settings.lastPlaylistPath ||
+            !this.library.playlists.some((p) => p.path === this.settings.lastPlaylistPath)) {
+          this.settings.lastPlaylistPath = selected;
+          await this.saveSettings();
+        }
       }
 
       if (this.currentTrackPath && !this.library.tracks.some((track) => track.path === this.currentTrackPath)) {
