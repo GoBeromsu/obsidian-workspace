@@ -310,7 +310,6 @@ export class YouTubePlaylistView extends ItemView {
 			{ iconOnly: true, active: state.autoplayEnabled },
 		));
 
-		// Progress bar
 		const progressShell = summary.createDiv({ cls: 'ynp-progress-shell' });
 		const progressBar = progressShell.createDiv({ cls: 'ynp-progress-bar' });
 		const progressFill = progressBar.createDiv({ cls: 'ynp-progress-fill' });
@@ -684,8 +683,15 @@ export class YouTubePlaylistView extends ItemView {
 		const duration = this.playerSurface?.getDuration() ?? 0;
 
 		const ratio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
-		elements.progressFill.style.width = `${(ratio * 100).toFixed(2)}%`;
-		elements.progressTime.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+		const nextWidth = `${(ratio * 100).toFixed(2)}%`;
+		const nextTime = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+
+		if (elements.progressFill.style.width !== nextWidth) {
+			elements.progressFill.style.width = nextWidth;
+		}
+		if (elements.progressTime.textContent !== nextTime) {
+			elements.progressTime.textContent = nextTime;
+		}
 	}
 
 	private async toggleCurrentPlayback(current: PlaylistTrack): Promise<void> {
@@ -842,10 +848,7 @@ class YouTubePlayerSurface {
 					},
 					events: {
 						onReady: () => {
-							this.currentVideoId = track.videoId;
-							this.currentAutoplay = autoplayEnabled;
-							this.clearFallback();
-							this.onPlaybackChange(autoplayEnabled ? 'playing' : 'paused');
+							this.activateTrack(track.videoId, autoplayEnabled);
 						},
 						onStateChange: (event: { data: number }) => {
 							if (event.data === api.PlayerState.PLAYING) {
@@ -865,10 +868,7 @@ class YouTubePlayerSurface {
 				});
 			} else {
 				this.player.loadVideoById(track.videoId);
-				this.currentVideoId = track.videoId;
-				this.currentAutoplay = autoplayEnabled;
-				this.clearFallback();
-				this.onPlaybackChange(autoplayEnabled ? 'playing' : 'paused');
+				this.activateTrack(track.videoId, autoplayEnabled);
 			}
 		} catch {
 			this.renderFallback(track, autoplayEnabled);
@@ -899,17 +899,20 @@ class YouTubePlayerSurface {
 	}
 
 	getCurrentTime(): number {
-		if (this.player && typeof this.player.getCurrentTime === 'function') {
-			try { return this.player.getCurrentTime(); } catch { return 0; }
-		}
-		return 0;
+		if (!this.player) return 0;
+		try { return this.player.getCurrentTime(); } catch { return 0; }
 	}
 
 	getDuration(): number {
-		if (this.player && typeof this.player.getDuration === 'function') {
-			try { return this.player.getDuration(); } catch { return 0; }
-		}
-		return 0;
+		if (!this.player) return 0;
+		try { return this.player.getDuration(); } catch { return 0; }
+	}
+
+	private activateTrack(videoId: string, autoplayEnabled: boolean): void {
+		this.currentVideoId = videoId;
+		this.currentAutoplay = autoplayEnabled;
+		this.clearFallback();
+		this.onPlaybackChange(autoplayEnabled ? 'playing' : 'paused');
 	}
 
 	seekTo(ratio: number): void {
