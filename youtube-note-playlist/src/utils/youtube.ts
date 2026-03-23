@@ -59,6 +59,10 @@ export function buildYoutubeEmbedUrl(videoId: string, autoplay = false): string 
   return url.toString();
 }
 
+export function buildObsidianProxyUrl(videoId: string): string {
+  return `https://releases.obsidian.md/youtube?v=${videoId}`;
+}
+
 export function buildYoutubeThumbnailUrl(videoId: string, quality = 'mqdefault'): string {
   return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
 }

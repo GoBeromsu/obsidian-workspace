@@ -682,6 +682,13 @@ export class YouTubePlaylistView extends ItemView {
 		const currentTime = this.playerSurface?.getCurrentTime() ?? 0;
 		const duration = this.playerSurface?.getDuration() ?? 0;
 
+		if (duration === 0 && currentTime === 0 && this.playbackState === 'playing') {
+			if (elements.progressTime.textContent !== 'Streaming...') {
+				elements.progressTime.textContent = 'Streaming...';
+			}
+			return;
+		}
+
 		const ratio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 		const nextWidth = `${(ratio * 100).toFixed(2)}%`;
 		const nextTime = `${formatTime(currentTime)} / ${formatTime(duration)}`;
@@ -845,10 +852,14 @@ class YouTubePlayerSurface {
 						modestbranding: 1,
 						playsinline: 1,
 						rel: 0,
+						origin: window.location.origin,
 					},
 					events: {
 						onReady: () => {
 							this.activateTrack(track.videoId, autoplayEnabled);
+						},
+						onError: () => {
+							this.renderFallback(track, autoplayEnabled);
 						},
 						onStateChange: (event: { data: number }) => {
 							if (event.data === api.PlayerState.PLAYING) {
@@ -877,7 +888,7 @@ class YouTubePlayerSurface {
 
 	async play(): Promise<boolean> {
 		if (this.player) {
-			this.player.playVideo();
+			try { this.player.playVideo(); } catch { /* player not ready */ }
 			return true;
 		}
 
@@ -886,15 +897,15 @@ class YouTubePlayerSurface {
 			return true;
 		}
 
-		return false;
+		return true;
 	}
 
 	async pause(): Promise<boolean> {
-		if (!this.player) {
-			return false;
+		if (this.player) {
+			try { this.player.pauseVideo(); } catch { /* player not ready */ }
+			return true;
 		}
 
-		this.player.pauseVideo();
 		return true;
 	}
 
@@ -955,11 +966,11 @@ class YouTubePlayerSurface {
 
 		const frame = document.createElement('iframe');
 		frame.className = 'ynp-video-frame';
-		frame.allow =
-			'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+		frame.sandbox =
+			'allow-forms allow-presentation allow-same-origin allow-popups-to-escape-sandbox allow-scripts allow-modals allow-popups';
+		frame.allow = 'fullscreen';
 		frame.referrerPolicy = 'strict-origin-when-cross-origin';
-		frame.allowFullscreen = true;
-		frame.src = `${track.embedUrl}${track.embedUrl.includes('?') ? '&' : '?'}autoplay=${autoplayEnabled ? 1 : 0}&rel=0`;
+		frame.src = `https://releases.obsidian.md/youtube?v=${track.videoId}`;
 		this.host.appendChild(frame);
 		this.fallbackFrame = frame;
 		this.currentVideoId = track.videoId;
@@ -991,6 +1002,7 @@ interface YouTubeApiNamespace {
 			playerVars: Record<string, string | number>;
 			events: {
 				onReady?: () => void;
+				onError?: () => void;
 				onStateChange: (event: { data: number }) => void;
 			};
 		},
