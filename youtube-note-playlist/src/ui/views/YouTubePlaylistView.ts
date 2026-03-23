@@ -841,47 +841,49 @@ class YouTubePlayerSurface {
 			return;
 		}
 
+		// Always create a fresh player — loadVideoById breaks after DOM re-attachment
+		this.player?.destroy();
+		this.player = null;
+		this.playerRoot?.remove();
+		this.playerRoot = null;
+		this.clearFallback();
+
 		try {
 			const api = await loadYouTubeApi();
 			this.mountPlayerRoot();
 
-			if (!this.player) {
-				this.player = new api.Player(this.playerRoot as HTMLElement, {
-					videoId: track.videoId,
-					playerVars: {
-						autoplay: autoplayEnabled ? 1 : 0,
-						modestbranding: 1,
-						playsinline: 1,
-						rel: 0,
-						origin: window.location.origin,
+			this.player = new api.Player(this.playerRoot!, {
+				videoId: track.videoId,
+				playerVars: {
+					autoplay: autoplayEnabled ? 1 : 0,
+					modestbranding: 1,
+					playsinline: 1,
+					rel: 0,
+					origin: window.location.origin,
+				},
+				events: {
+					onReady: () => {
+						this.activateTrack(track.videoId, autoplayEnabled);
 					},
-					events: {
-						onReady: () => {
-							this.activateTrack(track.videoId, autoplayEnabled);
-						},
-						onError: () => {
-							this.renderFallback(track, autoplayEnabled);
-						},
-						onStateChange: (event: { data: number }) => {
-							if (event.data === api.PlayerState.PLAYING) {
-								this.onPlaybackChange('playing');
-								return;
-							}
-
-							if (event.data === api.PlayerState.PAUSED || event.data === api.PlayerState.ENDED) {
-								this.onPlaybackChange('paused');
-							}
-
-							if (event.data === api.PlayerState.ENDED) {
-								void this.onEnded();
-							}
-						},
+					onError: () => {
+						this.renderFallback(track, autoplayEnabled);
 					},
-				});
-			} else {
-				this.player.loadVideoById(track.videoId);
-				this.activateTrack(track.videoId, autoplayEnabled);
-			}
+					onStateChange: (event: { data: number }) => {
+						if (event.data === api.PlayerState.PLAYING) {
+							this.onPlaybackChange('playing');
+							return;
+						}
+
+						if (event.data === api.PlayerState.PAUSED || event.data === api.PlayerState.ENDED) {
+							this.onPlaybackChange('paused');
+						}
+
+						if (event.data === api.PlayerState.ENDED) {
+							void this.onEnded();
+						}
+					},
+				},
+			});
 		} catch {
 			this.renderFallback(track, autoplayEnabled);
 		}
