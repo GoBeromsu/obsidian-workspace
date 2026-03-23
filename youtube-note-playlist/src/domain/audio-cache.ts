@@ -13,7 +13,7 @@ export class AudioCacheService implements AudioCachePort {
 	constructor(basePath: string, format: AudioFormat = 'mp3', ytdlpPath?: string) {
 		this.format = format;
 		this.ytdlpPath = ytdlpPath ?? AudioCacheService.discoverYtdlpPath();
-		this.cacheDir = join(basePath, '.obsidian', 'plugins', 'youtube-note-playlist', 'audio-cache');
+		this.cacheDir = join(basePath, '.obsidian', 'plugins', 'obsidian-note-player', 'audio-cache');
 		if (!existsSync(this.cacheDir)) {
 			mkdirSync(this.cacheDir, { recursive: true });
 		}

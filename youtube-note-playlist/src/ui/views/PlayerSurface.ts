@@ -61,7 +61,7 @@ function loadYouTubeApi(): Promise<YouTubeApiNamespace> {
 	}
 
 	youtubeApiPromise = new Promise<YouTubeApiNamespace>((resolve, reject) => {
-		const existing = document.querySelector('script[data-ynp-youtube-api="true"]');
+		const existing = document.querySelector('script[data-onp-youtube-api="true"]');
 		const waitForReady = (remainingAttempts: number) => {
 			if (window.YT?.Player) {
 				resolve(window.YT);
@@ -86,7 +86,7 @@ function loadYouTubeApi(): Promise<YouTubeApiNamespace> {
 		const script = document.createElement('script');
 		script.src = 'https://www.youtube.com/iframe_api';
 		script.async = true;
-		script.dataset.ynpYoutubeApi = 'true';
+		script.dataset.onpYoutubeApi = 'true';
 		script.onerror = () => reject(new Error('Failed to load the YouTube player API.'));
 		document.head.appendChild(script);
 	});
@@ -94,7 +94,7 @@ function loadYouTubeApi(): Promise<YouTubeApiNamespace> {
 	return youtubeApiPromise;
 }
 
-export class YouTubePlayerSurface {
+export class PlayerSurface {
 	private currentVideoId: string | null = null;
 	private currentAutoplay = false;
 	private host: HTMLElement;
@@ -118,13 +118,17 @@ export class YouTubePlayerSurface {
 	}
 
 	async render(track: PlaylistTrack, autoplayEnabled: boolean): Promise<void> {
-		if (this.currentVideoId === track.videoId && this.player && this.currentAutoplay === autoplayEnabled) {
-			return;
+		if (this.currentVideoId === track.videoId && this.currentAutoplay === autoplayEnabled) {
+			if (this.player || this.audioElement) {
+				return;
+			}
 		}
 
 		// Always create a fresh player — loadVideoById breaks after DOM re-attachment
 		this.player?.destroy();
 		this.player = null;
+		this.audioElement?.pause();
+		this.audioElement = null;
 		this.playerRoot?.remove();
 		this.playerRoot = null;
 
@@ -149,6 +153,13 @@ export class YouTubePlayerSurface {
 						if (autoplayEnabled) {
 							window.setTimeout(() => {
 								if (this.currentVideoId === track.videoId && !this.hasReceivedPlayingState && !this.audioFallbackAttempted) {
+									try {
+										const currentTime = this.player?.getCurrentTime?.() ?? 0;
+										if (currentTime > 1) {
+											this.hasReceivedPlayingState = true;
+											return;
+										}
+									} catch { /* player may be in bad state, proceed with fallback */ }
 									this.audioFallbackAttempted = true;
 									void this.renderAudioFallback(track, autoplayEnabled);
 								}
@@ -313,12 +324,12 @@ export class YouTubePlayerSurface {
 	private mountPlayerRoot(): void {
 		if (this.playerRoot) return;
 		this.host.empty();
-		this.playerRoot = this.host.createDiv({ cls: 'ynp-iframe-api-host' });
+		this.playerRoot = this.host.createDiv({ cls: 'onp-iframe-api-host' });
 	}
 
 	private renderUnavailable(): void {
 		this.host.empty();
-		const notice = this.host.createDiv({ cls: 'ynp-player-unavailable' });
+		const notice = this.host.createDiv({ cls: 'onp-player-unavailable' });
 		notice.textContent = 'Playback unavailable — install yt-dlp for audio fallback.';
 		this.onPlaybackChange('paused');
 	}

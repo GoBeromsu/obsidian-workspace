@@ -11,7 +11,7 @@ export interface YoutubePlaylistPropertyMapping {
 
 import type { AudioFormat } from './audio';
 
-export interface YoutubeNotePlaylistSettings extends YoutubePlaylistPropertyMapping {
+export interface NotePlayerSettings extends YoutubePlaylistPropertyMapping {
   autoOpenOnStartup: boolean;
   playlistFolder: string;
   lastPlaylistPath: string | null;

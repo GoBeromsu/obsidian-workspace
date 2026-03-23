@@ -1,4 +1,4 @@
-import type { YoutubeNotePlaylistSettings, YoutubePlaylistPropertyMapping } from '../types/settings';
+import type { NotePlayerSettings, YoutubePlaylistPropertyMapping } from '../types/settings';
 import { dedupe } from '../utils/dedupe';
 
 export const DEFAULT_PROPERTY_MAPPING: YoutubePlaylistPropertyMapping = {
@@ -12,7 +12,7 @@ export const DEFAULT_PROPERTY_MAPPING: YoutubePlaylistPropertyMapping = {
   playlistNoteType: 'music-playlist',
 };
 
-export const DEFAULT_SETTINGS: YoutubeNotePlaylistSettings = {
+export const DEFAULT_SETTINGS: NotePlayerSettings = {
   ...DEFAULT_PROPERTY_MAPPING,
   autoOpenOnStartup: false,
   playlistFolder: '90. System/Playlists',
@@ -35,7 +35,7 @@ export function normalizePropertyName(value: string, fallback: string): string {
   return normalized.length > 0 ? normalized : fallback;
 }
 
-export function normalizeSettings(loaded: YoutubeNotePlaylistSettings): YoutubeNotePlaylistSettings {
+export function normalizeSettings(loaded: NotePlayerSettings): NotePlayerSettings {
   return {
     ...loaded,
     musicUrlProperties: normalizePropertyList(

@@ -11,11 +11,11 @@ import type {
 	PlaylistViewHost,
 	PlaylistViewState,
 } from '../../types/view';
-import type { PlaybackState } from '../../types/playback';
 import { PlaylistNameModal } from './PlaylistNameModal';
-import { YouTubePlayerSurface, formatTime } from './YouTubePlayerSurface';
+import { PlayerSurface, formatTime } from './PlayerSurface';
 
-export const VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST = 'youtube-note-playlist-view';
+export const VIEW_TYPE_NOTE_PLAYER = 'obsidian-note-player-view';
+export const VIEW_TYPE_LEGACY = 'youtube-note-playlist-view';
 
 interface ViewElements {
 	root: HTMLElement;
@@ -29,74 +29,65 @@ interface ViewElements {
 	queuePanel: HTMLElement;
 }
 
-export class YouTubePlaylistView extends ItemView {
+export class NotePlayerView extends ItemView {
 	private readonly host: PlaylistViewHost;
+	private readonly playerSurface: PlayerSurface;
+	private readonly playerHostEl: HTMLElement;
 	private elements: ViewElements | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private resizeObserver: ResizeObserver | null = null;
-	private playerSurface: YouTubePlayerSurface | null = null;
 	private dragFromIndex: number | null = null;
 	private actionInFlight = false;
-	private playbackState: PlaybackState = 'idle';
-	private playbackTrackPath: string | null = null;
+	private lastRenderedTrackPath: string | null = null;
 	private progressIntervalId: number | null = null;
 
-	constructor(leaf: WorkspaceLeaf, host: PlaylistViewHost) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		host: PlaylistViewHost,
+		playerSurface: PlayerSurface,
+		playerHostEl: HTMLElement,
+	) {
 		super(leaf);
 		this.host = host;
+		this.playerSurface = playerSurface;
+		this.playerHostEl = playerHostEl;
 		this.navigation = false;
 	}
 
 	getViewType(): string {
-		return VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST;
+		return VIEW_TYPE_NOTE_PLAYER;
 	}
 
 	getDisplayText(): string {
-		return 'YouTube Playlist';
+		return 'Note Player';
 	}
 
 	getIcon(): string {
-		return 'list-video';
+		return 'play-square';
 	}
 
 	async onOpen(): Promise<void> {
 		const root = this.containerEl.children[1] as HTMLElement;
 		root.empty();
-		root.addClass('ynp-view-root');
+		root.addClass('onp-view-root');
 
-		const toolbarPanel = root.createDiv({ cls: 'ynp-pane-section ynp-toolbar-panel' });
-		const heroPanel = root.createDiv({ cls: 'ynp-pane-section ynp-hero-panel' });
-		const playerPanel = root.createDiv({ cls: 'ynp-pane-section ynp-player-panel' });
-		const playerVideo = document.createElement('div');
-		playerVideo.className = 'ynp-player-video';
-		const queuePanel = root.createDiv({ cls: 'ynp-pane-section ynp-queue-panel' });
+		const toolbarPanel = root.createDiv({ cls: 'onp-pane-section onp-toolbar-panel' });
+		const heroPanel = root.createDiv({ cls: 'onp-pane-section onp-hero-panel' });
+		const playerPanel = root.createDiv({ cls: 'onp-pane-section onp-player-panel' });
+		const queuePanel = root.createDiv({ cls: 'onp-pane-section onp-queue-panel' });
 
 		this.elements = {
 			root,
 			toolbarPanel,
 			heroPanel,
 			playerPanel,
-			playerVideo,
+			playerVideo: this.playerHostEl,
 			progressBar: null,
 			progressFill: null,
 			progressTime: null,
 			queuePanel,
 		};
 
-		this.playerSurface = new YouTubePlayerSurface(
-			playerVideo,
-			async () => {
-				await this.runAction('Queued next track', () => this.host.playNext());
-			},
-			(nextPlaybackState) => {
-				this.setPlaybackState(nextPlaybackState);
-			},
-		);
-
-		const cacheService = this.host.getAudioCacheService?.() ?? null;
-		if (cacheService) {
-			this.playerSurface.setAudioCacheService(cacheService);
-		}
 		this.resizeObserver = new ResizeObserver((entries) => {
 			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
 			this.applyResponsiveClasses(nextWidth);
@@ -117,8 +108,9 @@ export class YouTubePlaylistView extends ItemView {
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = null;
 		this.stopProgressInterval();
-		this.playerSurface?.destroy();
-		this.playerSurface = null;
+		if (this.playerHostEl.parentElement) {
+			this.playerHostEl.parentElement.removeChild(this.playerHostEl);
+		}
 		this.elements = null;
 	}
 
@@ -147,12 +139,12 @@ export class YouTubePlaylistView extends ItemView {
 
 		elements.toolbarPanel.empty();
 
-		const bar = elements.toolbarPanel.createDiv({ cls: 'ynp-toolbar-bar' });
-		const copy = bar.createDiv({ cls: 'ynp-toolbar-copy' });
-		copy.createDiv({ cls: 'ynp-toolbar-label', text: 'YouTube Playlist' });
+		const bar = elements.toolbarPanel.createDiv({ cls: 'onp-toolbar-bar' });
+		const copy = bar.createDiv({ cls: 'onp-toolbar-copy' });
+		copy.createDiv({ cls: 'onp-toolbar-label', text: 'Note Player' });
 
-		const controls = bar.createDiv({ cls: 'ynp-toolbar-controls' });
-		const select = controls.createEl('select', { cls: 'dropdown ynp-toolbar-select' });
+		const controls = bar.createDiv({ cls: 'onp-toolbar-controls' });
+		const select = controls.createEl('select', { cls: 'dropdown onp-toolbar-select' });
 		select.createEl('option', { value: '', text: 'Select a playlist' });
 		for (const playlist of state.playlists) {
 			select.createEl('option', { value: playlist.path, text: playlist.title });
@@ -204,28 +196,28 @@ export class YouTubePlaylistView extends ItemView {
 		}
 
 		const coverImage = selectedPlaylist.coverImage ?? state.queue[0]?.thumbnailUrl ?? state.currentTrack?.thumbnailUrl ?? '';
-		const hero = elements.heroPanel.createDiv({ cls: 'ynp-playlist-hero' });
-		const cover = hero.createDiv({ cls: 'ynp-hero-cover' });
+		const hero = elements.heroPanel.createDiv({ cls: 'onp-playlist-hero' });
+		const cover = hero.createDiv({ cls: 'onp-hero-cover' });
 		if (coverImage) {
 			cover.style.backgroundImage = `url("${coverImage}")`;
 		} else {
-			const icon = cover.createDiv({ cls: 'ynp-empty-icon' });
+			const icon = cover.createDiv({ cls: 'onp-empty-icon' });
 			setIcon(icon, 'music-4');
 		}
 
-		const copy = hero.createDiv({ cls: 'ynp-hero-copy' });
-		copy.createDiv({ cls: 'ynp-hero-kicker', text: 'Playlist' });
-		copy.createEl('h2', { cls: 'ynp-hero-title', text: selectedPlaylist.title });
+		const copy = hero.createDiv({ cls: 'onp-hero-copy' });
+		copy.createDiv({ cls: 'onp-hero-kicker', text: 'Playlist' });
+		copy.createEl('h2', { cls: 'onp-hero-title', text: selectedPlaylist.title });
 		copy.createDiv({
-			cls: 'ynp-hero-meta',
+			cls: 'onp-hero-meta',
 			text: `${selectedPlaylist.trackCount} tracks • ${state.library.length} music notes`,
 		});
 
 		if (selectedPlaylist.description) {
-			copy.createDiv({ cls: 'ynp-hero-description', text: selectedPlaylist.description });
+			copy.createDiv({ cls: 'onp-hero-description', text: selectedPlaylist.description });
 		}
 
-		const actions = copy.createDiv({ cls: 'ynp-hero-actions' });
+		const actions = copy.createDiv({ cls: 'onp-hero-actions' });
 		if (!state.currentTrack && state.queue.length > 0) {
 			actions.appendChild(this.createActionButton('Play all', 'play', () => {
 				const firstTrack = state.queue[0];
@@ -243,11 +235,9 @@ export class YouTubePlaylistView extends ItemView {
 		const elements = this.elements;
 		if (!elements) return;
 
-		// Preserve playerVideo before emptying — it holds the live YouTube iframe.
-		// Detaching and re-attaching the element destroys the iframe and breaks loadVideoById.
-		const savedVideo = elements.playerVideo;
-		if (savedVideo.parentElement) {
-			savedVideo.parentElement.removeChild(savedVideo);
+		// Detach player host before emptying — it holds the live YouTube iframe.
+		if (this.playerHostEl.parentElement) {
+			this.playerHostEl.parentElement.removeChild(this.playerHostEl);
 		}
 
 		elements.playerPanel.empty();
@@ -255,43 +245,43 @@ export class YouTubePlaylistView extends ItemView {
 		const current = state.currentTrack;
 		if (!current) {
 			elements.playerPanel.style.display = 'none';
-			this.playbackTrackPath = null;
-			this.playbackState = 'idle';
+			this.lastRenderedTrackPath = null;
 			elements.progressBar = null;
 			elements.progressFill = null;
 			elements.progressTime = null;
 			this.stopProgressInterval();
-			this.playerSurface?.clear();
+			// Only clear the surface when it actually has a track loaded.
+			// Calling clear() unconditionally triggers onPlaybackChange('idle') -> notifyChange -> render -> infinite loop.
+			if (state.playbackState !== 'idle') {
+				this.playerSurface.clear();
+			}
 			return;
 		}
 
-		if (this.playbackTrackPath !== current.path) {
-			this.playbackTrackPath = current.path;
-			this.playbackState = state.autoplayEnabled ? 'playing' : 'paused';
-		}
+		const playbackState = state.playbackState;
 
 		elements.playerPanel.style.display = '';
-		const playerRail = elements.playerPanel.createDiv({ cls: 'ynp-now-playing-shell' });
-		const summary = playerRail.createDiv({ cls: 'ynp-now-playing-summary' });
-		const trackCard = summary.createDiv({ cls: 'ynp-track-card ynp-track-card--compact ynp-player-track-card' });
-		const thumb = trackCard.createDiv({ cls: 'ynp-track-thumb' });
+		const playerRail = elements.playerPanel.createDiv({ cls: 'onp-now-playing-shell' });
+		const summary = playerRail.createDiv({ cls: 'onp-now-playing-summary' });
+		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-player-track-card' });
+		const thumb = trackCard.createDiv({ cls: 'onp-track-thumb' });
 		thumb.style.backgroundImage = `url("${current.thumbnailUrl}")`;
 
-		const meta = trackCard.createDiv({ cls: 'ynp-track-meta' });
-		meta.createDiv({ cls: 'ynp-now-playing-kicker', text: 'Now playing' });
-		meta.createDiv({ cls: 'ynp-track-title', text: current.title });
+		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
+		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
+		meta.createDiv({ cls: 'onp-track-title', text: current.title });
 		meta.createDiv({
-			cls: 'ynp-track-subtitle',
+			cls: 'onp-track-subtitle',
 			text: `${current.artist || 'Unknown artist'} • ${state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'}`,
 		});
 
-		const controls = summary.createDiv({ cls: 'ynp-control-row ynp-player-controls' });
+		const controls = summary.createDiv({ cls: 'onp-control-row onp-player-controls' });
 		controls.appendChild(this.createActionButton('Previous', 'skip-back', () => {
 			void this.runAction('Moved to previous track', () => this.host.playPrevious());
 		}, { iconOnly: true }));
 		controls.appendChild(this.createActionButton(
-			this.playbackState === 'playing' ? 'Pause current track' : 'Play current track',
-			this.playbackState === 'playing' ? 'pause' : 'play',
+			playbackState === 'playing' ? 'Pause current track' : 'Play current track',
+			playbackState === 'playing' ? 'pause' : 'play',
 			() => {
 				void this.toggleCurrentPlayback(current);
 			},
@@ -312,10 +302,10 @@ export class YouTubePlaylistView extends ItemView {
 			{ iconOnly: true, active: state.autoplayEnabled },
 		));
 
-		const progressShell = summary.createDiv({ cls: 'ynp-progress-shell' });
-		const progressBar = progressShell.createDiv({ cls: 'ynp-progress-bar' });
-		const progressFill = progressBar.createDiv({ cls: 'ynp-progress-fill' });
-		const progressTime = progressShell.createDiv({ cls: 'ynp-progress-time' });
+		const progressShell = summary.createDiv({ cls: 'onp-progress-shell' });
+		const progressBar = progressShell.createDiv({ cls: 'onp-progress-bar' });
+		const progressFill = progressBar.createDiv({ cls: 'onp-progress-fill' });
+		const progressTime = progressShell.createDiv({ cls: 'onp-progress-time' });
 		elements.progressBar = progressBar;
 		elements.progressFill = progressFill;
 		elements.progressTime = progressTime;
@@ -323,18 +313,23 @@ export class YouTubePlaylistView extends ItemView {
 		progressBar.addEventListener('click', (event) => {
 			const rect = progressBar.getBoundingClientRect();
 			const ratio = (event.clientX - rect.left) / rect.width;
-			this.playerSurface?.seekTo(ratio);
+			this.playerSurface.seekTo(ratio);
 		});
 
 		this.syncProgressBar();
-		this.startProgressInterval();
+		if (playbackState === 'playing') {
+			this.startProgressInterval();
+		} else {
+			this.stopProgressInterval();
+		}
 
 		const videoShell = playerRail.createDiv({
-			cls: 'ynp-player-video-shell',
+			cls: 'onp-player-video-shell',
 		});
-		// Re-attach the preserved video element — iframe stays alive, no reload
-		videoShell.appendChild(savedVideo);
-		void this.playerSurface?.render(current, state.autoplayEnabled);
+		videoShell.appendChild(this.playerHostEl);
+		void this.playerSurface.render(current, state.autoplayEnabled);
+
+		this.lastRenderedTrackPath = current.path;
 	}
 
 	private renderQueue(state: PlaylistViewState): void {
@@ -343,11 +338,11 @@ export class YouTubePlaylistView extends ItemView {
 
 		elements.queuePanel.empty();
 
-		const header = elements.queuePanel.createDiv({ cls: 'ynp-section-header' });
-		header.createDiv({ cls: 'ynp-section-title', text: 'Tracks' });
+		const header = elements.queuePanel.createDiv({ cls: 'onp-section-header' });
+		header.createDiv({ cls: 'onp-section-title', text: 'Tracks' });
 		const selectedPlaylist = this.getSelectedPlaylist(state);
 		header.createDiv({
-			cls: 'ynp-section-meta',
+			cls: 'onp-section-meta',
 			text: selectedPlaylist ? `${state.queue.length} tracks` : 'Select a playlist first',
 		});
 
@@ -366,21 +361,21 @@ export class YouTubePlaylistView extends ItemView {
 			return;
 		}
 
-		const list = elements.queuePanel.createDiv({ cls: 'ynp-list ynp-queue-list' });
+		const list = elements.queuePanel.createDiv({ cls: 'onp-list onp-queue-list' });
 		state.queue.forEach((track, index) => {
 			const row = list.createDiv({
-				cls: this.buildRowClass('ynp-track-row', {
+				cls: this.buildRowClass('onp-track-row', {
 					'is-current': state.currentTrack?.path === track.path,
 					'is-drag-source': this.dragFromIndex === index,
 				}),
 			});
 
-			const grip = row.createDiv({ cls: 'ynp-row-grip' });
+			const grip = row.createDiv({ cls: 'onp-row-grip' });
 			grip.setAttribute('draggable', 'true');
 			grip.setAttribute('aria-label', 'Drag to reorder');
 			grip.setAttribute('title', 'Drag to reorder');
-			setIcon(grip.createDiv({ cls: 'ynp-row-grip-icon' }), 'grip-vertical');
-			grip.createSpan({ cls: 'ynp-row-order', text: String(index + 1).padStart(2, '0') });
+			setIcon(grip.createDiv({ cls: 'onp-row-grip-icon' }), 'grip-vertical');
+			grip.createSpan({ cls: 'onp-row-order', text: String(index + 1).padStart(2, '0') });
 
 			grip.addEventListener('dragstart', (event) => {
 				this.dragFromIndex = index;
@@ -417,33 +412,33 @@ export class YouTubePlaylistView extends ItemView {
 				void this.runAction('Saved new queue order', () => this.host.moveTrackInPlaylist(fromIndex, index));
 			});
 
-			const thumb = row.createDiv({ cls: 'ynp-row-thumb' });
+			const thumb = row.createDiv({ cls: 'onp-row-thumb' });
 			thumb.style.backgroundImage = `url("${track.thumbnailUrl}")`;
-			const thumbPlay = thumb.createDiv({ cls: 'ynp-row-thumb-play' });
+			const thumbPlay = thumb.createDiv({ cls: 'onp-row-thumb-play' });
 			setIcon(thumbPlay, 'play');
 			thumb.addEventListener('click', () => {
 				void this.runAction(`Playing ${track.title}`, () => this.host.playTrack(track.path));
 			});
 
-			const body = row.createDiv({ cls: 'ynp-row-copy' });
-			const title = body.createDiv({ cls: 'ynp-row-title', text: track.title });
+			const body = row.createDiv({ cls: 'onp-row-copy' });
+			const title = body.createDiv({ cls: 'onp-row-title', text: track.title });
 			title.setAttribute('title', track.path);
 			body.createDiv({
-				cls: 'ynp-row-subtitle',
+				cls: 'onp-row-subtitle',
 				text: track.artist || 'Unknown artist',
 			});
 			body.addEventListener('click', () => {
 				void this.runAction(`Playing ${track.title}`, () => this.host.playTrack(track.path));
 			});
 
-			const rowActions = row.createDiv({ cls: 'ynp-row-actions' });
+			const rowActions = row.createDiv({ cls: 'onp-row-actions' });
 			if (state.currentTrack?.path === track.path) {
-				const eqBars = rowActions.createDiv({ cls: 'ynp-row-state ynp-eq-bars' });
+				const eqBars = rowActions.createDiv({ cls: 'onp-row-state onp-eq-bars' });
 				eqBars.setAttribute('aria-label', 'Playing');
 				eqBars.setAttribute('title', 'Playing');
-				eqBars.createDiv({ cls: 'ynp-eq-bar' });
-				eqBars.createDiv({ cls: 'ynp-eq-bar' });
-				eqBars.createDiv({ cls: 'ynp-eq-bar' });
+				eqBars.createDiv({ cls: 'onp-eq-bar' });
+				eqBars.createDiv({ cls: 'onp-eq-bar' });
+				eqBars.createDiv({ cls: 'onp-eq-bar' });
 			}
 			rowActions.appendChild(this.createMenuButton('Track actions', 'more-vertical', (event) => {
 				this.openTrackMenu(event, track);
@@ -569,11 +564,11 @@ export class YouTubePlaylistView extends ItemView {
 	}
 
 	private renderEmptyState(container: HTMLElement, title: string, copy: string): void {
-		const state = container.createDiv({ cls: 'ynp-empty-state' });
-		const icon = state.createDiv({ cls: 'ynp-empty-icon' });
+		const state = container.createDiv({ cls: 'onp-empty-state' });
+		const icon = state.createDiv({ cls: 'onp-empty-icon' });
 		setIcon(icon, 'music-4');
-		state.createDiv({ cls: 'ynp-empty-title', text: title });
-		state.createDiv({ cls: 'ynp-empty-copy', text: copy });
+		state.createDiv({ cls: 'onp-empty-title', text: title });
+		state.createDiv({ cls: 'onp-empty-copy', text: copy });
 	}
 
 	private createActionButton(
@@ -588,17 +583,17 @@ export class YouTubePlaylistView extends ItemView {
 	): HTMLButtonElement {
 		const button = document.createElement('button');
 		button.type = 'button';
-		button.className = this.buildRowClass('ynp-button', {
+		button.className = this.buildRowClass('onp-button', {
 			'is-active': Boolean(options.active),
 			'is-icon-only': Boolean(options.iconOnly),
 			'mod-cta': Boolean(options.cta),
 		});
 		button.setAttribute('aria-label', label);
 		button.setAttribute('title', label);
-		const iconEl = button.createSpan({ cls: 'ynp-button-icon' });
+		const iconEl = button.createSpan({ cls: 'onp-button-icon' });
 		setIcon(iconEl, icon);
 		if (!options.iconOnly) {
-			button.createSpan({ cls: 'ynp-button-label', text: label });
+			button.createSpan({ cls: 'onp-button-label', text: label });
 		}
 		button.addEventListener('click', (event) => {
 			event.preventDefault();
@@ -615,7 +610,7 @@ export class YouTubePlaylistView extends ItemView {
 	): HTMLButtonElement {
 		const button = document.createElement('button');
 		button.type = 'button';
-		button.className = 'clickable-icon ynp-icon-button';
+		button.className = 'clickable-icon onp-icon-button';
 		button.setAttribute('aria-label', label);
 		button.setAttribute('title', label);
 		setIcon(button, icon);
@@ -634,7 +629,7 @@ export class YouTubePlaylistView extends ItemView {
 	): HTMLButtonElement {
 		const button = document.createElement('button');
 		button.type = 'button';
-		button.className = 'clickable-icon ynp-icon-button';
+		button.className = 'clickable-icon onp-icon-button';
 		button.setAttribute('aria-label', label);
 		button.setAttribute('title', label);
 		setIcon(button, icon);
@@ -650,21 +645,8 @@ export class YouTubePlaylistView extends ItemView {
 		return [base, ...Object.entries(flags).filter(([, enabled]) => enabled).map(([name]) => name)].join(' ');
 	}
 
-	private setPlaybackState(nextPlaybackState: PlaybackState): void {
-		if (this.playbackState === nextPlaybackState) return;
-		this.playbackState = nextPlaybackState;
-		if (nextPlaybackState === 'playing') {
-			this.startProgressInterval();
-		} else {
-			this.stopProgressInterval();
-			this.syncProgressBar();
-		}
-		this.render();
-	}
-
 	private startProgressInterval(): void {
 		this.stopProgressInterval();
-		if (this.playbackState !== 'playing') return;
 		this.progressIntervalId = window.setInterval(() => {
 			this.syncProgressBar();
 		}, 1000);
@@ -681,8 +663,8 @@ export class YouTubePlaylistView extends ItemView {
 		const elements = this.elements;
 		if (!elements?.progressFill || !elements.progressTime) return;
 
-		const currentTime = this.playerSurface?.getCurrentTime() ?? 0;
-		const duration = this.playerSurface?.getDuration() ?? 0;
+		const currentTime = this.playerSurface.getCurrentTime();
+		const duration = this.playerSurface.getDuration();
 
 		const ratio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 		const nextWidth = `${(ratio * 100).toFixed(2)}%`;
@@ -697,22 +679,16 @@ export class YouTubePlaylistView extends ItemView {
 	}
 
 	private async toggleCurrentPlayback(current: PlaylistTrack): Promise<void> {
-		if (this.playbackState === 'playing') {
-			const handled = await this.playerSurface?.pause();
-			if (handled) {
-				this.setPlaybackState('paused');
-			}
+		const playbackState = this.host.getState().playbackState;
+		if (playbackState === 'playing') {
+			await this.playerSurface.pause();
 			return;
 		}
 
-		const handled = await this.playerSurface?.play();
-		if (handled) {
-			this.setPlaybackState('playing');
-			return;
+		const handled = await this.playerSurface.play();
+		if (!handled) {
+			await this.host.playTrack(current.path);
 		}
-
-		await this.host.playTrack(current.path);
-		this.setPlaybackState('playing');
 	}
 
 	private async toggleAutoplay(currentValue: boolean): Promise<void> {

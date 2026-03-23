@@ -1,10 +1,10 @@
 import { AbstractInputSuggest, App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { DEFAULT_PROPERTY_MAPPING } from '../domain/config';
 import type { AudioFormat } from '../types/audio';
-import type { YoutubeNotePlaylistSettings } from '../types/settings';
+import type { NotePlayerSettings } from '../types/settings';
 
 interface SettingsHost extends Plugin {
-	settings: YoutubeNotePlaylistSettings;
+	settings: NotePlayerSettings;
 	saveSettings(): Promise<void>;
 	refresh(showNotice?: boolean): Promise<void>;
 	refreshCompanionBases(): Promise<void>;
@@ -85,7 +85,7 @@ class CommaPropertySuggest extends AbstractInputSuggest<string> {
 	}
 }
 
-export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
+export class NotePlayerSettingsTab extends PluginSettingTab {
 	constructor(app: App, private readonly plugin: SettingsHost) {
 		super(app, plugin);
 	}
@@ -96,7 +96,7 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 
 		const getProperties = () => collectVaultProperties(this.app);
 
-		containerEl.createEl('h2', { text: 'YouTube Note Playlist' });
+		containerEl.createEl('h2', { text: 'Obsidian Note Player' });
 
 		new Setting(containerEl)
 			.setName('Playlist folder')

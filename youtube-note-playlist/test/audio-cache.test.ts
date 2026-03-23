@@ -25,7 +25,7 @@ import * as cp from 'child_process';
 import { AudioCacheService } from '../src/domain/audio-cache';
 
 const BASE_PATH = '/vault';
-const CACHE_DIR = join(BASE_PATH, '.obsidian', 'plugins', 'youtube-note-playlist', 'audio-cache');
+const CACHE_DIR = join(BASE_PATH, '.obsidian', 'plugins', 'obsidian-note-player', 'audio-cache');
 const MOCK_YTDLP = '/usr/local/bin/yt-dlp';
 
 function mockSpawnSync(status: number, stdout = '') {

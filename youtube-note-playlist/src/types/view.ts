@@ -1,3 +1,5 @@
+import type { PlaybackState } from './playback';
+
 export interface PlaylistSummary {
 	path: string;
 	title: string;
@@ -26,6 +28,7 @@ export interface PlaylistViewState {
 	library: PlaylistTrack[];
 	currentTrack: PlaylistTrack | null;
 	autoplayEnabled: boolean;
+	playbackState: PlaybackState;
 }
 
 /**
