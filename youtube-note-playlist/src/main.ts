@@ -11,26 +11,28 @@ import { PluginLogger } from './shared/plugin-logger';
 import { PluginNotices, type PluginNoticesHost } from './shared/plugin-notices';
 import type { MusicLibrarySnapshot, PlaylistNote } from './types/music';
 import type { MarkdownNoteSnapshot } from './types/notes';
-import type { YoutubeNotePlaylistSettings } from './types/settings';
+import type { NotePlayerSettings } from './types/settings';
 import type { AudioCachePort, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from './types/view';
 import { dedupe, sanitizeFileName } from './utils/dedupe';
 import { canonicalizeNotePath } from './utils/wikilink';
-import { YoutubeNotePlaylistSettingsTab } from './ui/settings';
-import { VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST, YouTubePlaylistView } from './ui/views/YouTubePlaylistView';
+import type { PlaybackState } from './types/playback';
+import { NotePlayerSettingsTab } from './ui/settings';
+import { VIEW_TYPE_NOTE_PLAYER, VIEW_TYPE_LEGACY, NotePlayerView } from './ui/views/NotePlayerView';
+import { PlayerSurface } from './ui/views/PlayerSurface';
 
 const EMPTY_LIBRARY: MusicLibrarySnapshot = {
   tracks: [],
   playlists: [],
 };
 
-export default class YoutubeNotePlaylistPlugin extends Plugin implements PlaylistViewHost {
-  settings: YoutubeNotePlaylistSettings = DEFAULT_SETTINGS;
+export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost {
+  settings: NotePlayerSettings = DEFAULT_SETTINGS;
 
-  readonly logger = new PluginLogger('YouTube Note Playlist', () => this.settings.debug);
+  readonly logger = new PluginLogger('Note Player', () => this.settings.debug);
   readonly notices = new PluginNotices(
     this as unknown as PluginNoticesHost,
     NOTICE_CATALOG,
-    'YouTube Note Playlist',
+    'Note Player',
   );
 
   private library: MusicLibrarySnapshot = EMPTY_LIBRARY;
@@ -41,6 +43,9 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   private errorMessage: string | null = null;
   private audioCacheService: AudioCacheService | null = null;
   private vaultBasePath = '';
+  private playerSurface: PlayerSurface | null = null;
+  private playerHostEl: HTMLDivElement | null = null;
+  private viewPlaybackState: PlaybackState = 'idle';
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -51,18 +56,33 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
       this.audioCacheService = new AudioCacheService(this.vaultBasePath, this.settings.audioFormat);
     }
 
-    this.registerView(
-      VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST,
-      (leaf: WorkspaceLeaf) => new YouTubePlaylistView(leaf, this),
+    this.playerHostEl = document.createElement('div');
+    this.playerHostEl.className = 'ynp-player-video';
+
+    this.playerSurface = new PlayerSurface(
+      this.playerHostEl,
+      async () => { await this.playNext(); },
+      (state: PlaybackState) => {
+        this.viewPlaybackState = state;
+        this.notifyChange();
+      },
     );
 
-    this.addRibbonIcon('play-square', 'Open YouTube Note Playlist', () => {
+    if (this.audioCacheService) {
+      this.playerSurface.setAudioCacheService(this.audioCacheService);
+    }
+
+    const createView = (leaf: WorkspaceLeaf) => new NotePlayerView(leaf, this, this.playerSurface!, this.playerHostEl!);
+    this.registerView(VIEW_TYPE_NOTE_PLAYER, createView);
+    this.registerView(VIEW_TYPE_LEGACY, createView);
+
+    this.addRibbonIcon('play-square', 'Open Note Player', () => {
       void this.activateView();
     });
 
     this.addCommand({
       id: 'open-youtube-note-playlist',
-      name: 'Open YouTube Note Playlist',
+      name: 'Open Note Player',
       callback: () => {
         void this.activateView();
       },
@@ -70,7 +90,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
 
     this.addCommand({
       id: 'refresh-youtube-note-library',
-      name: 'Refresh YouTube note library',
+      name: 'Refresh music library',
       callback: () => {
         void this.refresh(true);
       },
@@ -100,7 +120,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
       },
     });
 
-    this.addSettingTab(new YoutubeNotePlaylistSettingsTab(this.app, this));
+    this.addSettingTab(new NotePlayerSettingsTab(this.app, this));
     this.registerVaultRefreshEvents();
 
     if (this.settings.autoOpenOnStartup) {
@@ -112,6 +132,9 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
 
   onunload(): void {
     this.notices.unload();
+    this.playerSurface?.destroy();
+    this.playerSurface = null;
+    this.playerHostEl = null;
 
     if (this.refreshTimeout !== null) {
       window.clearTimeout(this.refreshTimeout);
@@ -120,7 +143,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 
   async loadSettings(): Promise<void> {
-    const loaded = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as YoutubeNotePlaylistSettings;
+    const loaded = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as NotePlayerSettings;
     this.settings = normalizeSettings(loaded);
   }
 
@@ -130,6 +153,9 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
 
     if (this.vaultBasePath && AudioCacheService.isAvailable()) {
       this.audioCacheService = new AudioCacheService(this.vaultBasePath, this.settings.audioFormat);
+      if (this.playerSurface) {
+        this.playerSurface.setAudioCacheService(this.audioCacheService);
+      }
     }
   }
 
@@ -149,6 +175,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
       library: this.library.tracks.map(toPlaylistTrack),
       currentTrack,
       autoplayEnabled: this.settings.autoplayEnabled,
+      playbackState: this.viewPlaybackState,
     };
   }
 
@@ -350,14 +377,17 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 
   private async activateView(): Promise<void> {
-    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST);
+    const existing = [
+      ...this.app.workspace.getLeavesOfType(VIEW_TYPE_NOTE_PLAYER),
+      ...this.app.workspace.getLeavesOfType(VIEW_TYPE_LEGACY),
+    ];
     if (existing.length > 0) {
       this.app.workspace.revealLeaf(existing[0]);
       return;
     }
 
     const leaf = this.app.workspace.getLeaf('tab');
-    await leaf.setViewState({ type: VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST, active: true });
+    await leaf.setViewState({ type: VIEW_TYPE_NOTE_PLAYER, active: true });
     this.app.workspace.revealLeaf(leaf);
   }
 

@@ -1,7 +1,7 @@
 {
-  "name": "youtube-note-playlist",
+  "name": "obsidian-note-player",
   "version": "0.4.0",
-  "description": "Play note-backed YouTube playlists inside an Obsidian view",
+  "description": "Play note-backed playlists inside Obsidian — YouTube, cached audio, and local files.",
   "main": "main.js",
   "packageManager": "pnpm@10.32.1",
   "type": "module",
