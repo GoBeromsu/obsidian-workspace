@@ -1,6 +1,7 @@
 import type { MusicLibrarySnapshot, MusicTrack, PlaylistNote } from '../types/music';
 import type { MarkdownNoteSnapshot } from '../types/notes';
 import type { YoutubePlaylistPropertyMapping } from '../types/settings';
+import { dedupe } from '../utils/dedupe';
 import { hasType, asStringArray, asTrimmedString } from '../utils/frontmatter';
 import { buildYoutubeEmbedUrl, buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, extractYoutubeVideoId } from '../utils/youtube';
 import { canonicalizeNotePath, parsePlaylistTrackReference } from '../utils/wikilink';
@@ -164,18 +165,3 @@ function firstAvailableString(
   return null;
 }
 
-function dedupe(values: string[]): string[] {
-  const seen = new Set<string>();
-  const deduped: string[] = [];
-
-  for (const value of values) {
-    if (seen.has(value)) {
-      continue;
-    }
-
-    seen.add(value);
-    deduped.push(value);
-  }
-
-  return deduped;
-}

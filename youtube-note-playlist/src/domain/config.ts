@@ -1,4 +1,5 @@
 import type { YoutubeNotePlaylistSettings, YoutubePlaylistPropertyMapping } from '../types/settings';
+import { dedupe } from '../utils/dedupe';
 
 export const DEFAULT_PROPERTY_MAPPING: YoutubePlaylistPropertyMapping = {
   musicUrlProperties: ['source', 'youtube', 'youtube_url', 'url'],
@@ -17,6 +18,7 @@ export const DEFAULT_SETTINGS: YoutubeNotePlaylistSettings = {
   playlistFolder: '90. System/Playlists',
   lastPlaylistPath: null,
   autoplayEnabled: true,
+  audioFormat: 'mp3',
   debug: false,
 };
 
@@ -33,15 +35,41 @@ export function normalizePropertyName(value: string, fallback: string): string {
   return normalized.length > 0 ? normalized : fallback;
 }
 
-function dedupe(values: string[]): string[] {
-  const seen = new Set<string>();
-  const deduped: string[] = [];
-
-  for (const value of values) {
-    if (seen.has(value)) continue;
-    seen.add(value);
-    deduped.push(value);
-  }
-
-  return deduped;
+export function normalizeSettings(loaded: YoutubeNotePlaylistSettings): YoutubeNotePlaylistSettings {
+  return {
+    ...loaded,
+    musicUrlProperties: normalizePropertyList(
+      loaded.musicUrlProperties ?? [],
+      DEFAULT_PROPERTY_MAPPING.musicUrlProperties,
+    ),
+    musicThumbnailProperties: normalizePropertyList(
+      loaded.musicThumbnailProperties ?? [],
+      DEFAULT_PROPERTY_MAPPING.musicThumbnailProperties,
+    ),
+    musicArtistProperties: normalizePropertyList(
+      loaded.musicArtistProperties ?? [],
+      DEFAULT_PROPERTY_MAPPING.musicArtistProperties,
+    ),
+    playlistTrackProperty: normalizePropertyName(
+      loaded.playlistTrackProperty ?? '',
+      DEFAULT_PROPERTY_MAPPING.playlistTrackProperty,
+    ),
+    playlistDescriptionProperty: normalizePropertyName(
+      loaded.playlistDescriptionProperty ?? '',
+      DEFAULT_PROPERTY_MAPPING.playlistDescriptionProperty,
+    ),
+    playlistCoverProperty: normalizePropertyName(
+      loaded.playlistCoverProperty ?? '',
+      DEFAULT_PROPERTY_MAPPING.playlistCoverProperty,
+    ),
+    musicNoteType: normalizePropertyName(
+      loaded.musicNoteType ?? '',
+      DEFAULT_PROPERTY_MAPPING.musicNoteType,
+    ),
+    playlistNoteType: normalizePropertyName(
+      loaded.playlistNoteType ?? '',
+      DEFAULT_PROPERTY_MAPPING.playlistNoteType,
+    ),
+  };
 }
+

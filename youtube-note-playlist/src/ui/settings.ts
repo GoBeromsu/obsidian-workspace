@@ -1,5 +1,6 @@
 import { AbstractInputSuggest, App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { DEFAULT_PROPERTY_MAPPING } from '../domain/config';
+import type { AudioFormat } from '../types/audio';
 import type { YoutubeNotePlaylistSettings } from '../types/settings';
 
 interface SettingsHost extends Plugin {
@@ -255,6 +256,27 @@ export class YoutubeNotePlaylistSettingsTab extends PluginSettingTab {
 						await this.plugin.refreshCompanionBases();
 					}),
 			);
+
+		containerEl.createEl('h3', { text: 'Audio fallback' });
+		containerEl.createEl('p', {
+			text: 'When YouTube embed playback is unavailable, the plugin downloads audio via yt-dlp.',
+			cls: 'setting-item-description',
+		});
+
+		new Setting(containerEl)
+			.setName('Audio format')
+			.setDesc('The format used when downloading audio via yt-dlp.')
+			.addDropdown((dropdown) => {
+				const formats: AudioFormat[] = ['mp3', 'wav', 'opus', 'aac'];
+				for (const fmt of formats) {
+					dropdown.addOption(fmt, fmt.toUpperCase());
+				}
+				dropdown.setValue(this.plugin.settings.audioFormat);
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.audioFormat = value as AudioFormat;
+					await this.plugin.saveSettings();
+				});
+			});
 
 		new Setting(containerEl)
 			.setName('Autoplay next track')

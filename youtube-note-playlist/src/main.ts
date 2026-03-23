@@ -1,16 +1,19 @@
 import { normalizePath, Plugin, TFile, WorkspaceLeaf } from 'obsidian';
 import { AudioCacheService } from './domain/audio-cache';
 import { buildCompanionBaseFiles, MUSIC_BASE_NAME, PLAYLISTS_BASE_NAME } from './domain/base-files';
-import { DEFAULT_PROPERTY_MAPPING, DEFAULT_SETTINGS, normalizePropertyList, normalizePropertyName } from './domain/config';
+import { DEFAULT_SETTINGS, normalizeSettings } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
+import { PlaybackStateManager } from './domain/playback-state';
 import { NOTICE_CATALOG } from './domain/notices';
+import { resolveSelectedPlaylistPath, getPlaylistOrThrow, toPlaylistSummary, toPlaylistTrack } from './domain/playlist-manager';
 import { createPlaylistNoteContent, updatePlaylistNoteContent } from './domain/playlist-storage';
 import { PluginLogger } from './shared/plugin-logger';
 import { PluginNotices, type PluginNoticesHost } from './shared/plugin-notices';
 import type { MusicLibrarySnapshot, PlaylistNote } from './types/music';
 import type { MarkdownNoteSnapshot } from './types/notes';
 import type { YoutubeNotePlaylistSettings } from './types/settings';
-import type { PlaylistTrack, PlaylistSummary, PlaylistViewHost, PlaylistViewState } from './ui/playlist-view-model';
+import type { AudioCachePort, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from './types/view';
+import { dedupe, sanitizeFileName } from './utils/dedupe';
 import { canonicalizeNotePath } from './utils/wikilink';
 import { YoutubeNotePlaylistSettingsTab } from './ui/settings';
 import { VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST, YouTubePlaylistView } from './ui/views/YouTubePlaylistView';
@@ -33,18 +36,19 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   private library: MusicLibrarySnapshot = EMPTY_LIBRARY;
   private changeListeners = new Set<() => void>();
   private refreshTimeout: number | null = null;
-  private currentTrackPath: string | null = null;
+  private readonly playback = new PlaybackStateManager();
   private isLoading = false;
   private errorMessage: string | null = null;
   private audioCacheService: AudioCacheService | null = null;
+  private vaultBasePath = '';
 
   async onload(): Promise<void> {
     await this.loadSettings();
     await this.refreshIndex();
 
-    const basePath = (this.app.vault.adapter as { getBasePath?(): string }).getBasePath?.() ?? '';
-    if (basePath && AudioCacheService.isAvailable()) {
-      this.audioCacheService = new AudioCacheService(basePath);
+    this.vaultBasePath = (this.app.vault.adapter as { getBasePath?(): string }).getBasePath?.() ?? '';
+    if (this.vaultBasePath && AudioCacheService.isAvailable()) {
+      this.audioCacheService = new AudioCacheService(this.vaultBasePath, this.settings.audioFormat);
     }
 
     this.registerView(
@@ -117,93 +121,32 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
 
   async loadSettings(): Promise<void> {
     const loaded = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as YoutubeNotePlaylistSettings;
-    this.settings = {
-      ...loaded,
-      musicUrlProperties: normalizePropertyList(
-        loaded.musicUrlProperties ?? [],
-        DEFAULT_PROPERTY_MAPPING.musicUrlProperties,
-      ),
-      musicThumbnailProperties: normalizePropertyList(
-        loaded.musicThumbnailProperties ?? [],
-        DEFAULT_PROPERTY_MAPPING.musicThumbnailProperties,
-      ),
-      musicArtistProperties: normalizePropertyList(
-        loaded.musicArtistProperties ?? [],
-        DEFAULT_PROPERTY_MAPPING.musicArtistProperties,
-      ),
-      playlistTrackProperty: normalizePropertyName(
-        loaded.playlistTrackProperty ?? '',
-        DEFAULT_PROPERTY_MAPPING.playlistTrackProperty,
-      ),
-      playlistDescriptionProperty: normalizePropertyName(
-        loaded.playlistDescriptionProperty ?? '',
-        DEFAULT_PROPERTY_MAPPING.playlistDescriptionProperty,
-      ),
-      playlistCoverProperty: normalizePropertyName(
-        loaded.playlistCoverProperty ?? '',
-        DEFAULT_PROPERTY_MAPPING.playlistCoverProperty,
-      ),
-      musicNoteType: normalizePropertyName(
-        loaded.musicNoteType ?? '',
-        DEFAULT_PROPERTY_MAPPING.musicNoteType,
-      ),
-      playlistNoteType: normalizePropertyName(
-        loaded.playlistNoteType ?? '',
-        DEFAULT_PROPERTY_MAPPING.playlistNoteType,
-      ),
-    };
+    this.settings = normalizeSettings(loaded);
   }
 
   async saveSettings(): Promise<void> {
-    this.settings.musicUrlProperties = normalizePropertyList(
-      this.settings.musicUrlProperties,
-      DEFAULT_PROPERTY_MAPPING.musicUrlProperties,
-    );
-    this.settings.musicThumbnailProperties = normalizePropertyList(
-      this.settings.musicThumbnailProperties,
-      DEFAULT_PROPERTY_MAPPING.musicThumbnailProperties,
-    );
-    this.settings.musicArtistProperties = normalizePropertyList(
-      this.settings.musicArtistProperties,
-      DEFAULT_PROPERTY_MAPPING.musicArtistProperties,
-    );
-    this.settings.playlistTrackProperty = normalizePropertyName(
-      this.settings.playlistTrackProperty,
-      DEFAULT_PROPERTY_MAPPING.playlistTrackProperty,
-    );
-    this.settings.playlistDescriptionProperty = normalizePropertyName(
-      this.settings.playlistDescriptionProperty,
-      DEFAULT_PROPERTY_MAPPING.playlistDescriptionProperty,
-    );
-    this.settings.playlistCoverProperty = normalizePropertyName(
-      this.settings.playlistCoverProperty,
-      DEFAULT_PROPERTY_MAPPING.playlistCoverProperty,
-    );
-    this.settings.musicNoteType = normalizePropertyName(
-      this.settings.musicNoteType,
-      DEFAULT_PROPERTY_MAPPING.musicNoteType,
-    );
-    this.settings.playlistNoteType = normalizePropertyName(
-      this.settings.playlistNoteType,
-      DEFAULT_PROPERTY_MAPPING.playlistNoteType,
-    );
+    this.settings = normalizeSettings(this.settings);
     await this.saveData(this.settings);
+
+    if (this.vaultBasePath && AudioCacheService.isAvailable()) {
+      this.audioCacheService = new AudioCacheService(this.vaultBasePath, this.settings.audioFormat);
+    }
   }
 
   getState(): PlaylistViewState {
-    const selectedPlaylistPath = this.resolveSelectedPlaylistPath();
+    const selectedPlaylistPath = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
     const selectedPlaylist =
       this.library.playlists.find((playlist) => playlist.path === selectedPlaylistPath) ?? null;
-    const queue = selectedPlaylist?.tracks.map((track) => this.toPlaylistTrack(track)) ?? [];
-    const currentTrack = this.resolveCurrentTrack(queue);
+    const queue = selectedPlaylist?.tracks.map(toPlaylistTrack) ?? [];
+    const currentTrack = this.playback.resolveCurrentTrack(queue, this.library.tracks, toPlaylistTrack);
 
     return {
       isLoading: this.isLoading,
       errorMessage: this.errorMessage,
-      playlists: this.library.playlists.map((playlist) => this.toPlaylistSummary(playlist)),
+      playlists: this.library.playlists.map(toPlaylistSummary),
       selectedPlaylistPath,
       queue,
-      library: this.library.tracks.map((track) => this.toPlaylistTrack(track)),
+      library: this.library.tracks.map(toPlaylistTrack),
       currentTrack,
       autoplayEnabled: this.settings.autoplayEnabled,
     };
@@ -234,7 +177,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   async selectPlaylist(path: string | null): Promise<void> {
     this.settings.lastPlaylistPath = path;
     await this.saveSettings();
-    this.currentTrackPath = null;
+    this.playback.currentTrackPath = null;
     this.notifyChange();
   }
 
@@ -260,57 +203,32 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 
   async playTrack(path: string): Promise<void> {
-    const track = this.library.tracks.find((entry) => entry.path === path);
-    if (!track) {
-      throw new Error(`Track not found: ${path}`);
-    }
-
-    this.currentTrackPath = path;
+    this.playback.play(path, this.library.tracks);
     this.notifyChange();
   }
 
   async playPrevious(): Promise<void> {
-    const queue = this.currentQueue();
-    if (queue.length === 0) return;
-
-    if (!this.currentTrackPath) {
-      this.currentTrackPath = queue[0].path;
+    if (this.playback.previous(this.currentQueue())) {
       this.notifyChange();
-      return;
     }
-
-    const currentIndex = queue.findIndex((track) => track.path === this.currentTrackPath);
-    if (currentIndex <= 0) return;
-    this.currentTrackPath = queue[currentIndex - 1].path;
-    this.notifyChange();
   }
 
   async playNext(): Promise<void> {
-    const queue = this.currentQueue();
-    if (queue.length === 0) return;
-
-    if (!this.currentTrackPath) {
-      this.currentTrackPath = queue[0].path;
+    if (this.playback.next(this.currentQueue())) {
       this.notifyChange();
-      return;
     }
-
-    const currentIndex = queue.findIndex((track) => track.path === this.currentTrackPath);
-    if (currentIndex < 0 || currentIndex >= queue.length - 1) return;
-    this.currentTrackPath = queue[currentIndex + 1].path;
-    this.notifyChange();
   }
 
   async addTrackToPlaylist(trackPath: string): Promise<void> {
-    const playlistPath = this.resolveSelectedPlaylistPath();
+    const playlistPath = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
     if (!playlistPath) {
       this.notices.show('playlist_missing');
       return;
     }
 
     await this.addTrackToSpecificPlaylist(playlistPath, trackPath);
-    if (!this.currentTrackPath) {
-      this.currentTrackPath = trackPath;
+    if (!this.playback.currentTrackPath) {
+      this.playback.currentTrackPath = trackPath;
       this.notifyChange();
     }
   }
@@ -320,15 +238,15 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 
   async removeTrackFromPlaylist(trackPath: string): Promise<void> {
-    const playlistPath = this.resolveSelectedPlaylistPath();
+    const playlistPath = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
     if (!playlistPath) {
       this.notices.show('playlist_missing');
       return;
     }
 
     await this.removeTrackFromSpecificPlaylist(playlistPath, trackPath);
-    if (this.currentTrackPath === trackPath) {
-      this.currentTrackPath = this.currentQueue()[0]?.path ?? null;
+    if (this.playback.currentTrackPath === trackPath) {
+      this.playback.currentTrackPath = this.currentQueue()[0]?.path ?? null;
       this.notifyChange();
     }
   }
@@ -352,7 +270,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     playlist.tracks = nextTracks;
     this.notifyChange();
 
-    await this.persistPlaylist(playlist.path, nextTrackPaths);
+    await this.savePlaylistTracks(playlist.path, nextTrackPaths);
   }
 
   async openNote(path: string): Promise<void> {
@@ -371,7 +289,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     await this.setAutoplayEnabled(!this.settings.autoplayEnabled);
   }
 
-  getAudioCacheService(): AudioCacheService | null {
+  getAudioCacheService(): AudioCachePort | null {
     return this.audioCacheService;
   }
 
@@ -382,9 +300,9 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 
   private async addTrackToSpecificPlaylist(playlistPath: string, trackPath: string): Promise<void> {
-    const playlist = this.getPlaylistOrThrow(playlistPath);
+    const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
     const nextTrackPaths = dedupe([...playlist.trackPaths, trackPath]);
-    await this.writePlaylist(playlistPath, nextTrackPaths);
+    await this.savePlaylistTracks(playlistPath, nextTrackPaths, { refresh: true });
 
     const track = this.library.tracks.find((entry) => entry.path === trackPath);
     this.notices.show('track_added', {
@@ -394,9 +312,9 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 
   private async removeTrackFromSpecificPlaylist(playlistPath: string, trackPath: string): Promise<void> {
-    const playlist = this.getPlaylistOrThrow(playlistPath);
+    const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
     const nextTrackPaths = playlist.trackPaths.filter((entry) => entry !== trackPath);
-    await this.writePlaylist(playlistPath, nextTrackPaths);
+    await this.savePlaylistTracks(playlistPath, nextTrackPaths, { refresh: true });
 
     const track = this.library.tracks.find((entry) => entry.path === trackPath);
     this.notices.show('track_removed', {
@@ -494,7 +412,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     try {
       this.library = buildMusicLibrary(this.collectNoteSnapshots(), this.settings);
 
-      const selected = this.resolveSelectedPlaylistPath();
+      const selected = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
       if (this.library.playlists.length > 0 && selected !== this.settings.lastPlaylistPath) {
         if (!this.settings.lastPlaylistPath ||
             !this.library.playlists.some((p) => p.path === this.settings.lastPlaylistPath)) {
@@ -503,9 +421,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
         }
       }
 
-      if (this.currentTrackPath && !this.library.tracks.some((track) => track.path === this.currentTrackPath)) {
-        this.currentTrackPath = null;
-      }
+      this.playback.validateCurrent(this.library.tracks);
 
     } catch (error) {
       this.errorMessage = error instanceof Error ? error.message : String(error);
@@ -524,31 +440,18 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     }));
   }
 
-  private resolveSelectedPlaylistPath(): string | null {
-    const configured = this.settings.lastPlaylistPath;
-    if (configured && this.library.playlists.some((playlist) => playlist.path === configured)) {
-      return configured;
-    }
-
-    return this.library.playlists[0]?.path ?? null;
-  }
-
-  private getPlaylistOrThrow(playlistPath: string): PlaylistNote {
-    const playlist = this.library.playlists.find((entry) => entry.path === playlistPath);
-    if (!playlist) {
-      throw new Error(`Playlist not found: ${playlistPath}`);
-    }
-    return playlist;
-  }
-
-  private async writePlaylist(playlistPath: string, trackPaths: string[]): Promise<void> {
+  private async savePlaylistTracks(
+    playlistPath: string,
+    trackPaths: string[],
+    opts: { refresh?: boolean } = {},
+  ): Promise<void> {
     const file = this.app.vault.getAbstractFileByPath(playlistPath);
     if (!(file instanceof TFile)) {
       throw new Error(`Playlist file not found: ${playlistPath}`);
     }
 
     const existing = await this.app.vault.read(file);
-    const playlist = this.getPlaylistOrThrow(playlistPath);
+    const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
     const nextContent = updatePlaylistNoteContent(existing, {
       trackPaths: trackPaths.map((trackPath) => canonicalizeNotePath(trackPath)),
       coverUrl: playlist.coverUrl || undefined,
@@ -556,26 +459,11 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     }, this.settings);
 
     await this.app.vault.modify(file, nextContent);
-    await this.refreshIndex();
 
-    this.notices.show('playlist_saved', { name: playlist.title });
-  }
-
-  private async persistPlaylist(playlistPath: string, trackPaths: string[]): Promise<void> {
-    const file = this.app.vault.getAbstractFileByPath(playlistPath);
-    if (!(file instanceof TFile)) {
-      throw new Error(`Playlist file not found: ${playlistPath}`);
+    if (opts.refresh) {
+      await this.refreshIndex();
+      this.notices.show('playlist_saved', { name: playlist.title });
     }
-
-    const existing = await this.app.vault.read(file);
-    const playlist = this.getPlaylistOrThrow(playlistPath);
-    const nextContent = updatePlaylistNoteContent(existing, {
-      trackPaths: trackPaths.map((trackPath) => canonicalizeNotePath(trackPath)),
-      coverUrl: playlist.coverUrl || undefined,
-      description: playlist.description || undefined,
-    }, this.settings);
-
-    await this.app.vault.modify(file, nextContent);
   }
 
   private async activateActivePlaylist(): Promise<void> {
@@ -615,7 +503,7 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 
   private async addActiveNoteToSelectedPlaylist(): Promise<void> {
-    const playlistPath = this.resolveSelectedPlaylistPath();
+    const playlistPath = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
     if (!playlistPath) {
       this.notices.show('playlist_missing');
       return;
@@ -653,12 +541,12 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 
   private selectedPlaylist(): PlaylistNote | null {
-    const selectedPlaylistPath = this.resolveSelectedPlaylistPath();
+    const selectedPlaylistPath = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
     return this.library.playlists.find((playlist) => playlist.path === selectedPlaylistPath) ?? null;
   }
 
   private currentQueue(): PlaylistTrack[] {
-    return this.selectedPlaylist()?.tracks.map((track) => this.toPlaylistTrack(track)) ?? [];
+    return this.selectedPlaylist()?.tracks.map(toPlaylistTrack) ?? [];
   }
 
   private getCompanionBasePath(fileName: string): string {
@@ -667,47 +555,6 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
     );
 
     return match?.path ?? fileName;
-  }
-
-  private resolveCurrentTrack(queue: PlaylistTrack[]): PlaylistTrack | null {
-    if (!this.currentTrackPath) {
-      return null;
-    }
-
-    const queuedTrack = queue.find((track) => track.path === this.currentTrackPath);
-    if (queuedTrack) {
-      return queuedTrack;
-    }
-
-    const libraryTrack = this.library.tracks.find((track) => track.path === this.currentTrackPath);
-    if (libraryTrack) {
-      return this.toPlaylistTrack(libraryTrack);
-    }
-
-    return null;
-  }
-
-  private toPlaylistSummary(playlist: PlaylistNote): PlaylistSummary {
-    return {
-      path: playlist.path,
-      title: playlist.title,
-      trackCount: playlist.trackPaths.length,
-      description: playlist.description || undefined,
-      coverImage: playlist.coverUrl || undefined,
-    };
-  }
-
-  private toPlaylistTrack(track: MusicLibrarySnapshot['tracks'][number]): PlaylistTrack {
-    return {
-      path: track.path,
-      title: track.title,
-      artist: track.artist,
-      sourceUrl: track.sourceUrl,
-      videoId: track.videoId,
-      embedUrl: track.embedUrl,
-      thumbnailUrl: track.thumbnailUrl,
-      tags: track.tags,
-    };
   }
 
   private async getAvailablePlaylistPath(name: string): Promise<string> {
@@ -746,27 +593,3 @@ export default class YoutubeNotePlaylistPlugin extends Plugin implements Playlis
   }
 }
 
-function sanitizeFileName(input: string): string {
-  const trimmed = input.trim();
-  if (!trimmed) {
-    return 'New Playlist';
-  }
-
-  return trimmed.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function dedupe(values: string[]): string[] {
-  const seen = new Set<string>();
-  const deduped: string[] = [];
-
-  for (const value of values) {
-    if (seen.has(value)) {
-      continue;
-    }
-
-    seen.add(value);
-    deduped.push(value);
-  }
-
-  return deduped;
-}

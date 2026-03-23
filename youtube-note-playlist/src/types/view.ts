@@ -1,25 +1,72 @@
-import type { MusicTrack, PlaylistNote } from './music';
-
-export interface PlaylistViewModel {
-  library: MusicTrack[];
-  playlists: PlaylistNote[];
-  selectedPlaylistPath: string | null;
-  selectedPlaylist: PlaylistNote | null;
-  counts: {
-    tracks: number;
-    playlists: number;
-  };
+export interface PlaylistSummary {
+	path: string;
+	title: string;
+	trackCount: number;
+	description?: string;
+	coverImage?: string;
 }
 
+export interface PlaylistTrack {
+	path: string;
+	title: string;
+	artist: string;
+	sourceUrl: string;
+	videoId: string;
+	embedUrl: string;
+	thumbnailUrl: string;
+	tags: string[];
+}
+
+export interface PlaylistViewState {
+	isLoading: boolean;
+	errorMessage: string | null;
+	playlists: PlaylistSummary[];
+	selectedPlaylistPath: string | null;
+	queue: PlaylistTrack[];
+	library: PlaylistTrack[];
+	currentTrack: PlaylistTrack | null;
+	autoplayEnabled: boolean;
+}
+
+/**
+ * UI contract assumptions:
+ * - state changes are pushed through subscribe()
+ * - queue order is persisted by moveTrackInPlaylist()
+ * - playNext()/playPrevious() update currentTrack in the next emitted state
+ * - if setAutoplayEnabled is missing, the UI falls back to toggleAutoplay()
+ * - if openBase() is missing, the UI simply hides base-navigation actions
+ */
 export interface PlaylistViewHost {
-  getViewModel(): Promise<PlaylistViewModel>;
-  refreshLibrary(): Promise<PlaylistViewModel>;
-  selectPlaylist(path: string | null): Promise<PlaylistViewModel>;
-  savePlaylistOrder(playlistPath: string, trackPaths: string[]): Promise<PlaylistViewModel>;
-  addTrackToPlaylist(playlistPath: string, trackPath: string): Promise<PlaylistViewModel>;
-  removeTrackFromPlaylist(playlistPath: string, trackPath: string): Promise<PlaylistViewModel>;
-  createPlaylist(name: string, seedTrackPaths?: string[]): Promise<PlaylistViewModel>;
-  revealTrack(path: string): Promise<void>;
-  revealPlaylist(path: string): Promise<void>;
-  onDidChange(callback: () => void): () => void;
+	getState(): PlaylistViewState;
+	subscribe(onChange: () => void): () => void;
+	refresh(): Promise<void>;
+	selectPlaylist(path: string | null): Promise<void>;
+	selectActivePlaylist?(): Promise<void>;
+	createPlaylist(name: string): Promise<void>;
+	playTrack(path: string): Promise<void>;
+	playPrevious(): Promise<void>;
+	playNext(): Promise<void>;
+	addTrackToPlaylist(path: string): Promise<void>;
+	addActiveNoteToPlaylist?(): Promise<void>;
+	removeTrackFromPlaylist(path: string): Promise<void>;
+	moveTrackInPlaylist(fromIndex: number, toIndex: number): Promise<void>;
+	openNote(path: string): Promise<void>;
+	openPlaylist(path: string): Promise<void>;
+	openBase?(kind: 'music' | 'playlists'): Promise<void>;
+	refreshCompanionBases?(): Promise<void>;
+	toggleAutoplay?(): Promise<void>;
+	setAutoplayEnabled?(enabled: boolean): Promise<void>;
+	getAudioCacheService?(): AudioCachePort | null;
+}
+
+export interface AudioCachePort {
+	hasCached(videoId: string): boolean;
+	getFileUrl(videoId: string): string;
+	download(videoId: string, onProgress: (percent: number) => void): Promise<string>;
+}
+
+export interface VaultWriter {
+	readFile(path: string): Promise<string>;
+	writeFile(path: string, content: string): Promise<void>;
+	fileExists(path: string): boolean;
 }
