@@ -15,6 +15,7 @@ import type {
 	PlaylistViewHost,
 	PlaylistViewState,
 } from '../playlist-view-model';
+import { buildObsidianProxyUrl } from '../../utils/youtube';
 
 export const VIEW_TYPE_YOUTUBE_NOTE_PLAYLIST = 'youtube-note-playlist-view';
 
@@ -682,7 +683,7 @@ export class YouTubePlaylistView extends ItemView {
 		const currentTime = this.playerSurface?.getCurrentTime() ?? 0;
 		const duration = this.playerSurface?.getDuration() ?? 0;
 
-		if (duration === 0 && currentTime === 0 && this.playbackState === 'playing') {
+		if (duration === 0 && currentTime === 0 && this.playerSurface?.isUsingFallback()) {
 			if (elements.progressTime.textContent !== 'Streaming...') {
 				elements.progressTime.textContent = 'Streaming...';
 			}
@@ -919,6 +920,10 @@ class YouTubePlayerSurface {
 		try { return this.player.getDuration(); } catch { return 0; }
 	}
 
+	isUsingFallback(): boolean {
+		return this.player === null && this.fallbackFrame !== null;
+	}
+
 	private activateTrack(videoId: string, autoplayEnabled: boolean): void {
 		this.currentVideoId = videoId;
 		this.currentAutoplay = autoplayEnabled;
@@ -970,7 +975,7 @@ class YouTubePlayerSurface {
 			'allow-forms allow-presentation allow-same-origin allow-popups-to-escape-sandbox allow-scripts allow-modals allow-popups';
 		frame.allow = 'fullscreen';
 		frame.referrerPolicy = 'strict-origin-when-cross-origin';
-		frame.src = `https://releases.obsidian.md/youtube?v=${track.videoId}`;
+		frame.src = buildObsidianProxyUrl(track.videoId);
 		this.host.appendChild(frame);
 		this.fallbackFrame = frame;
 		this.currentVideoId = track.videoId;
