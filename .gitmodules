@@ -13,3 +13,6 @@
 [submodule "open-connections"]
 	path = open-connections
 	url = https://github.com/GoBeromsu/open-connections.git
+[submodule "youtube-note-playlist"]
+	path = youtube-note-playlist
+	url = https://github.com/GoBeromsu/obsidian-note-player.git
