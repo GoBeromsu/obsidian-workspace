@@ -113,6 +113,7 @@ The composition root (`main.ts`) passes real Obsidian objects which satisfy thes
 | `obsidian-boiler-template` | Source-of-truth seed template | `master` |
 | `obsidian-bible-search` | Bible verse search (private) | `main` |
 | `obsidian-qmd` | QMD semantic search integration | `main` |
+| `youtube-note-playlist` | YouTube music player via yt-dlp ([obsidian-note-player](https://github.com/GoBeromsu/obsidian-note-player)) | `main` |
 
 ## Release Workflow
 
