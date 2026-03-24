@@ -41,11 +41,21 @@ Grep for these anti-patterns in changed files:
 
 ## Core Workflow
 
+**Use the `/obsidian-cli` skill for ALL Obsidian vault and plugin interactions.** Do not run raw `obsidian` bash commands — invoke the skill instead so its full command reference is loaded.
+
+```
+Skill("obsidian-cli", "<command and args>")
+```
+
 ### Build & Deploy
 ```bash
+# 1. Build
 cd <plugin-dir> && pnpm build
-VAULT=$(obsidian eval code="app.vault.adapter.basePath")
-# Copy ALL dist files (main.js, styles.css, manifest.json, embed-worker.js, sql-wasm.wasm)
+
+# 2. Get vault path via obsidian-cli skill
+Skill("obsidian-cli", "eval code=\"app.vault.adapter.basePath\"")
+
+# 3. Copy dist files
 cp dist/* "$VAULT/.obsidian/plugins/<plugin-id>/"
 touch "$VAULT/.obsidian/plugins/<plugin-id>/.hotreload"
 ```
@@ -53,32 +63,35 @@ touch "$VAULT/.obsidian/plugins/<plugin-id>/.hotreload"
 ### Remote Deploy (via Tailscale SSH)
 Read `reference_qa_environments.md` from memory for remote host, vault path, and SSH commands. Remote obsidian CLI works over SSH.
 
-**Before remote QA**: Verify the remote Obsidian CLI is reachable:
+**Before remote QA**: Verify reachability:
 ```bash
 ssh <remote-host> "which obsidian && obsidian status" 2>/dev/null
 ```
 If unreachable, fall back to local QA only and note the limitation in the report.
 
 ### Verify No Errors
-```bash
-obsidian dev:errors
-obsidian eval code="var p=app.plugins.plugins['<id>'];console.log(JSON.stringify({r:p.ready,e:p.embed_ready,s:p.status_state,err:p.init_errors.length}))"
+
+```
+Skill("obsidian-cli", "dev:errors")
+Skill("obsidian-cli", "eval code=\"var p=app.plugins.plugins['<id>'];console.log(JSON.stringify({r:p.ready,s:p.status_state}))\"")
 ```
 
 ### Visual Verification
-```bash
-sleep 3 && obsidian dev:screenshot path=/tmp/test.png
-obsidian dev:dom selector=".my-class" text
+
+```
+Skill("obsidian-cli", "dev:screenshot path=/tmp/test.png")
+Skill("obsidian-cli", "dev:dom selector='.my-class' text")
 ```
 
 ### Functional Testing
-```bash
+
+```
 # Execute commands
-obsidian eval code="app.commands.executeCommandById('<command-id>')"
+Skill("obsidian-cli", "eval code=\"app.commands.executeCommandById('<command-id>')\"")
 # Check view state
-obsidian eval code="app.workspace.getLeavesOfType('<view-type>').length"
+Skill("obsidian-cli", "eval code=\"app.workspace.getLeavesOfType('<view-type>').length\"")
 # Query plugin internals
-obsidian eval code="var p=app.plugins.plugins['<id>'];console.log(p.someProperty)"
+Skill("obsidian-cli", "eval code=\"var p=app.plugins.plugins['<id>']; JSON.stringify(p.someProperty)\"")
 ```
 
 ## Guardrails (check EVERY session)
