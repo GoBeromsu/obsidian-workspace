@@ -366,7 +366,9 @@ If the PR gets `Changes requested` from **ObsidianReviewBot**, these are code-le
 | `Avoid using "settings" in settings headings` | Heading text contains the word "settings" | Rename to topic: "Appearance", "Advanced", "Connection" (NOT "General" — also rejected) |
 | `Avoid using "General" as a heading in settings` | `setName('General').setHeading()` is explicitly blocked by `no-problematic-settings-headings` | Use topic-specific names: "Connection", "Appearance", "Advanced", "Sync" |
 | `Avoid including the plugin name in settings headings` | Heading text contains the plugin name | Remove plugin name from heading text |
-| `Async method 'X' has no 'await' expression` | Method declared `async` but body has no `await` | Remove `async` keyword (and change return type to `void`). **Exception**: `ItemView.onOpen/onClose` must stay `async` — use `/skip` with explanation |
+| `Async method 'X' has no 'await' expression` (simple body) | Method declared `async` but body has no `await` | Remove `async` keyword (and change return type to `void`). **Exception**: `ItemView.onOpen/onClose` must stay `async` — use `/skip` with explanation |
+| `Async method 'X' has no 'await' expression` (delegate pass-through) | `async doThing() { return this.service.doThing(); }` — method just forwards to another async method without awaiting | Remove `async`; the returned Promise propagates automatically without it |
+| `Async method 'X' has no 'await' expression` (base class stub) | `async init(): Promise<void> {}` — empty body in a base class or abstract-style method | Replace body with `return Promise.resolve();` — empty `async` bodies trigger the rule even though they compile fine |
 | `Promises must be awaited... or marked with void` | Floating promise call | Add `void` operator: `void someAsync()` |
 | `Unexpected console statement. Only these console methods are allowed: warn, error, debug.` | `console.info` or `console.log` in source | Replace with `console.debug`, `console.warn`, or `console.error` |
 | `Disabling no-console is not allowed` | `eslint-disable no-console` directive | Remove directive; replace `console.*` with plugin logger |
@@ -378,3 +380,18 @@ If the PR gets `Changes requested` from **ObsidianReviewBot**, these are code-le
 | `Use Vault#configDir instead of .obsidian` | Hardcoded `.obsidian` path | Replace with `this.app.vault.configDir` |
 | `This assertion is unnecessary` | `as Type` when type already matches | Remove the type assertion |
 | `` `config` is deprecated `` | `tseslint.config(...)` in `eslint.config.js` | ⚠️ **False positive** — `tseslint.defineConfig()` does not exist in typescript-eslint 8.x. Use `/skip` with: "tseslint.defineConfig() does not exist in typescript-eslint 8.x — tseslint.config() is the only available API" |
+
+---
+
+## Bot-Specific Manual Checklist (after `pnpm lint` passes)
+
+These rules are **not reliably caught by local `pnpm lint`** but the ObsidianReviewBot enforces them. Run through this checklist manually after lint is clean.
+
+| Check | What to grep for | Fix |
+|-------|-----------------|-----|
+| Only `warn/error/debug` console methods | `grep -rn 'console\.info\|console\.log' src/` | Replace with `console.debug`, `console.warn`, or `console.error` |
+| `eslint-disable` directives have `-- reason` | `grep -rn 'eslint-disable' src/ \| grep -v ' -- '` | Append ` -- <reason>` to every directive; bare directives are rejected |
+| No `eslint-disable no-console` ever | `grep -rn 'disable.*no-console' src/` | Remove directive entirely; use plugin logger instead |
+| Object in template literal uses `String()` | `grep -rn '`\${' src/` — look for non-primitive variables | Wrap with `String(value)` or use `error instanceof Error ? error.message : String(error)` |
+
+**Why these escape local lint**: console method rules and disable-description checks are configured differently in the bot's ESLint environment. Even a correctly configured `eslint.base.js` may not reproduce the exact bot ruleset for these edge cases.

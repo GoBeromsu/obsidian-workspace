@@ -83,6 +83,36 @@ Keep `async` and use `/skip` on the bot comment:
 /skip onOpen and onClose must be async because ItemView declares them as Promise<void>
 ```
 
+### Variant: delegate pass-through
+
+A method that only forwards to another async method without awaiting is also flagged.
+
+```typescript
+// ❌ Bad — async but only delegates; no await needed
+async doThing(): Promise<void> {
+  return this.service.doThing();
+}
+
+// ✅ Good — the returned Promise propagates automatically
+doThing(): Promise<void> {
+  return this.service.doThing();
+}
+```
+
+### Variant: base class stub
+
+An empty `async` method body (e.g., in a base class or optional lifecycle hook) is flagged even though it compiles fine.
+
+```typescript
+// ❌ Bad — empty async body triggers the rule
+async init(): Promise<void> {}
+
+// ✅ Good — explicit Promise resolves the rule
+init(): Promise<void> {
+  return Promise.resolve();
+}
+```
+
 ---
 
 ## Handle floating promises
