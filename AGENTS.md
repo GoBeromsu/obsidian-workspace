@@ -114,16 +114,33 @@ The composition root (`main.ts`) passes real Obsidian objects which satisfy thes
 | `obsidian-bible-search` | Bible verse search (private) | `main` |
 | `obsidian-qmd` | QMD semantic search integration | `main` |
 | `youtube-note-playlist` | YouTube music player via yt-dlp ([obsidian-note-player](https://github.com/GoBeromsu/obsidian-note-player)) | `main` |
+| `obsidian-dream-space` | Note-driven 3D space via Claude API + Spline/Three.js | `main` |
 
 ## Release Workflow
 
-Every plugin follows the same release pipeline:
+There are two distinct release tracks — do not conflate them.
+
+### Track A: Ongoing version releases (every plugin, every version)
 
 1. `pnpm run ci` — MUST pass (build + lint + test)
-2. `pnpm release:patch`, `pnpm release:minor`, or `pnpm release:major` — run CI -> version bump -> auto-push tag
+2. `pnpm release:patch`, `pnpm release:minor`, or `pnpm release:major` — run CI → version bump → auto-push tag
 3. GitHub Actions handles the rest (CI + Release workflows)
 
 **IMPORTANT:** `git tag`, `git push --tags`, `gh release`, `npm publish`, and `pnpm publish` are **DENIED** by settings.json. Only `pnpm release:*` is allowed to trigger the release pipeline.
+
+### Track B: First-time community marketplace submission (one-time per plugin)
+
+Use the `/obsidian-publish` skill. It runs a deterministic readiness check then guides through the community PR flow:
+
+1. Run readiness check (manifest fields, code quality, version consistency)
+2. Ensure a GitHub Release exists with `main.js` + `manifest.json` (Track A first)
+3. Fork `obsidianmd/obsidian-releases` → edit `community-plugins.json` → PR titled `"Add plugin: <Name>"`
+4. Address bot/reviewer feedback in the same PR
+
+| Track | When | Command |
+|-------|------|---------|
+| Ongoing releases | Every version bump | `pnpm release:patch/minor/major` |
+| Community submission | One-time marketplace listing | `/obsidian-publish` skill |
 
 ## Knowledge Base
 
@@ -142,7 +159,7 @@ See [INDEX.md](.claude/knowledge/INDEX.md) for the full catalog.
 ```
 .claude/
 ├── agents/        # Custom agent definitions (obsidian-developer, obsidian-qa, obsidian-ui)
-├── skills/        # Invocable skills (obsidian-propagate, readme-guide, release)
+├── skills/        # Invocable skills (obsidian-propagate, obsidian-publish, obsidian-runtime-debug, frontend-design, readme-guide)
 ├── hooks/         # PostToolUse and Stop hooks (lint-check, post-build-reload, stop-verify, knowledge-capture)
 ├── knowledge/     # Development insights (gotchas, patterns, obsidian-api) — see INDEX.md
 ├── commands/      # Legacy commands
