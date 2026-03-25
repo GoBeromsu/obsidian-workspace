@@ -1,3 +1,25 @@
+<!-- Generated: 2026-03-25 | Updated: 2026-03-25 -->
+
+# obsidian-plugins monorepo
+
+## Purpose
+Monorepo of Obsidian plugins sharing a common 4-layer architecture, boiler-template sync engine, and agent team (obsidian-developer, obsidian-ui, obsidian-qa). Each plugin is a git submodule. `obsidian-boiler-template` is the source of truth for shared patterns.
+
+## Subdirectories
+
+| Directory | Purpose | Branch |
+|-----------|---------|--------|
+| `obsidian-eagle-plugin/` | Image upload to Eagle app (see `obsidian-eagle-plugin/AGENTS.md`) | `main` |
+| `open-connections/` | Semantic note connections via local embeddings (see `open-connections/AGENTS.md`) | `main` |
+| `obsidian-qmd/` | QMD semantic search integration (see `obsidian-qmd/AGENTS.md`) | `main` |
+| `youtube-note-playlist/` | Audio-focused music player via yt-dlp (see `youtube-note-playlist/AGENTS.md`) | `main` |
+| `obsidian-boiler-template/` | Source-of-truth seed template + sync engine (see `obsidian-boiler-template/AGENTS.md`) | `master` |
+| `Metadata-Auto-Classifier/` | AI-powered frontmatter classification (see `Metadata-Auto-Classifier/AGENTS.md`) | `master` |
+| `obsidian-bible-search/` | Bible verse search — private (see `obsidian-bible-search/AGENTS.md`) | `main` |
+| `obsidian-dream-space/` | Note-driven 3D space via Claude API + Three.js (see `obsidian-dream-space/AGENTS.md`) | `main` |
+
+---
+
 - Test vault: `$OBSIDIAN_VAULT_PATH` (set this in your shell profile or `~/.claude/settings.json`)
 - Vault config: `$OBSIDIAN_VAULT_PATH/.obsidian/`
 
