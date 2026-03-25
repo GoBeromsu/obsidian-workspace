@@ -1,0 +1,7 @@
+{
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"/Users/beomsu/Documents/Dev/Obsidian-Plugins/open-connections/tooling/shared/eslint.base.js\"}",
+  "error": "File does not exist. Note: your current working directory is /Users/beomsu/Documents/Dev/Obsidian-Plugins/.claude/skills/obsidian-publish.",
+  "timestamp": "2026-03-25T11:01:24.377Z",
+  "retry_count": 4
+}

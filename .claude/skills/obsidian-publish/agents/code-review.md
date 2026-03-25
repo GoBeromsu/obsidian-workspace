@@ -51,7 +51,7 @@ These cause `Changes requested` from ObsidianReviewBot and must be fixed.
 | `no-plugin-as-component` | `MarkdownRenderer.render(this, ...)` where `this` is the Plugin — causes memory leaks |
 | `no-view-references-in-plugin` | `this.someView = new MyView(...)` stored as plugin property — causes memory leaks |
 
-#### Code Quality
+#### Code Quality — Obsidian-specific
 | Rule | What to look for |
 |------|-----------------|
 | `no-sample-code` | Template code like `onSampleButtonClick()`, `mySetting` variable |
@@ -60,6 +60,24 @@ These cause `Changes requested` from ObsidianReviewBot and must be fixed.
 | `detach-leaves` | `workspace.detachLeavesOfType(...)` called inside `onunload()` — Obsidian handles this |
 | `object-assign` | `Object.assign(target, source)` — use spread `{ ...target, ...source }` instead |
 | `prefer-abstract-input-suggest` | Hand-copied `TextInputSuggest` class — use built-in `AbstractInputSuggest` |
+| `command-id-clean` | Command `id` must not contain the plugin ID — Obsidian namespaces it automatically. Bot message: "The command ID should not include the plugin ID" |
+| `command-name-clean` | Command `name` must not contain the plugin name — Obsidian shows it in the UI already. Bot message: "The command name should not include the plugin name" |
+| `settings-heading` | Settings headings must not contain "settings", the plugin name, or "General" — use specific category names like "Appearance", "Advanced", "Connection", "Sync". Bot message: "Avoid using 'settings' in settings headings" / "Avoid using 'General' as a heading" |
+
+#### Code Quality — TypeScript/ESLint conventions
+Read `references/typescript-conventions.md` for full details and examples. Summary:
+
+| Rule | Bot message |
+|------|------------|
+| `console-methods` | "Only these console methods are allowed: warn, error, debug." — replace `console.info/log` with `console.debug` |
+| `eslint-disable-description` | "Unexpected undescribed directive comment." — add ` -- reason` to every disable |
+| `no-unused-disable` | "Unused eslint-disable directive" — remove stale directives |
+| `async-no-await` | "Async method 'X' has no 'await' expression" — remove `async` (exception: `ItemView.onOpen/onClose`) |
+| `no-any` | "Unexpected any." — use `unknown` or a typed interface. **The eslint-disable directive for this rule is also banned** — you cannot suppress it, you must fix the type. See `references/typescript-conventions.md` for module augmentation pattern (workspace events) and `unknown` double-cast pattern. |
+| `object-stringify` | "'X' will use Object's default stringification" — wrap with `String()` |
+| `floating-promises` | "Promises must be awaited..." — add `void` or `await` |
+| `unnecessary-assertion` | "This assertion is unnecessary" — remove the `as Type` cast |
+| `eslint-config-modern` | ⚠️ False positive — use `/skip` (`tseslint.defineConfig()` doesn't exist in 8.x) |
 
 ---
 
@@ -178,18 +196,40 @@ X required fixes, Y recommendations.
 [If >0 required]: Fix all 🔴 items, push to main, then re-trigger bot.
 ```
 
-### Step 5: Install and Run Official Linter (if available)
+### Step 4b: Check ESLint Tooling Setup
 
-If `eslint-plugin-obsidianmd` is installed in the project, run it for authoritative results:
+Misconfigured ESLint is the #1 cause of "local lint passes, bot rejects" — the obsidianmd rules must be present in BOTH package.json AND configured in eslint.base.js. Having the package in devDependencies without the rules block means the plugin is never checked locally.
 
+**Check package.json:**
 ```bash
-# From plugin root
-npx eslint --no-ignore --plugin obsidianmd src/ --rule '{"obsidianmd/ui/sentence-case": "error"}' 2>/dev/null | head -50
+node -e "const p = require('./package.json'); const d = {...(p.dependencies||{}), ...(p.devDependencies||{})}; console.log('eslint:', d.eslint); console.log('obsidianmd plugin:', d['eslint-plugin-obsidianmd'] || '❌ MISSING'); console.log('deprecated eslint-plugin:', d['@typescript-eslint/eslint-plugin'] || 'ok (absent)'); console.log('deprecated parser:', d['@typescript-eslint/parser'] || 'ok (absent)');"
+ls .eslintrc* 2>/dev/null && echo "❌ legacy .eslintrc found — conflicts with flat config" || echo "✅ no legacy .eslintrc"
 ```
 
-Or better, run the project's own lint:
+**Check eslint.base.js content** (critical — package.json alone is not enough):
+```bash
+grep -n "eslint-plugin-obsidianmd\|obsidianmd" eslint.base.js 2>/dev/null || echo "❌ obsidianmd not found in eslint.base.js"
+grep -n "obsidianmd/ui/sentence-case\|obsidianmd/commands" eslint.base.js 2>/dev/null || echo "❌ obsidianmd rules block missing from eslint.base.js"
+```
+
+Flag as 🔴 Required if:
+- `eslint-plugin-obsidianmd` is missing from package.json — bot rules won't run locally
+- `eslint.base.js` does not import `eslint-plugin-obsidianmd` — package installed but not wired in
+- `eslint.base.js` does not have an obsidianmd rules block — **this is the silent failure mode**: lint passes locally, bot rejects
+- `eslint` is `^8.x` — mismatch with boiler template target (`^9.x`)
+- `@typescript-eslint/eslint-plugin` or `@typescript-eslint/parser` are present — deprecated, causes version conflicts
+- `.eslintrc.json` exists alongside `eslint.config.js` — legacy config overrides flat config
+
+If eslint.base.js is missing the obsidianmd block, sync it from `obsidian-boiler-template/tooling/shared/eslint.base.js`.
+
+### Step 5: Run the Official Linter (mandatory)
+
+Always run `pnpm lint` — this is the single most reliable check before submission. If the tooling setup is correct (Step 4b passes), this will catch all locally reproducible bot violations.
+
 ```bash
 pnpm lint 2>&1 | head -80
 ```
 
-If lint passes, note that the official linter found no violations.
+**Zero errors = locally clean.** If errors appear, fix them all before proceeding.
+
+Note: some bot rules are not locally reproducible (see bot-specific manual checklist in SKILL.md). After lint passes, run through those manually.

@@ -140,6 +140,43 @@ Once merged, announce in the [Obsidian forum](https://forum.obsidian.md) or Disc
 
 ---
 
+## ESLint Tooling Health Check
+
+Run this before the code quality checklist. Tooling misconfiguration causes the bot to flag false violations or miss real ones.
+
+```bash
+# From the plugin directory
+node -e "const p = require('./package.json'); const d = {...p.dependencies,...p.devDependencies}; console.log('eslint:', d.eslint); console.log('eslint-plugin-obsidianmd:', d['eslint-plugin-obsidianmd'] || 'MISSING'); console.log('deprecated @typescript-eslint/eslint-plugin:', d['@typescript-eslint/eslint-plugin'] || 'none'); console.log('deprecated @typescript-eslint/parser:', d['@typescript-eslint/parser'] || 'none');"
+```
+
+| Check | Required state | Fix |
+|-------|---------------|-----|
+| `eslint` version | `^9.x` | Upgrade from `^8.x` — boiler template target is `^9.39.4` |
+| `eslint-plugin-obsidianmd` | Present in devDependencies | Add `"eslint-plugin-obsidianmd": "^0.1.9"` |
+| `eslint.base.js` obsidianmd import | `import obsidianmd from 'eslint-plugin-obsidianmd'` present | Sync from boiler-template — **package.json alone is not enough** |
+| `eslint.base.js` obsidianmd rules | Rules block with `obsidianmd/*` rules present | Sync from boiler-template — without this, bot rejects while local lint passes |
+| `@typescript-eslint/eslint-plugin` | **Removed** (deprecated) | Delete from devDependencies — use unified `typescript-eslint` package instead |
+| `@typescript-eslint/parser` | **Removed** (deprecated) | Delete from devDependencies — use unified `typescript-eslint` package instead |
+| Legacy `.eslintrc.json` | **Deleted** | Remove — conflicts with flat config (`eslint.config.js`) |
+
+After fixing, run `pnpm install && pnpm lint` to verify.
+
+### ✅ eslint.base.js must include obsidianmd rules
+
+Having `eslint-plugin-obsidianmd` in `devDependencies` is NOT enough — the plugin must also be configured in `eslint.base.js`. If the file was synced from an older boiler-template version, it may be missing the obsidianmd rule block entirely.
+
+Check that `eslint.base.js` contains:
+```js
+import obsidianmd from 'eslint-plugin-obsidianmd'
+// ...and a rules block with obsidianmd/* rules in the src/**/*.ts config block
+```
+
+If missing, copy the obsidianmd block from `obsidian-boiler-template/tooling/shared/eslint.base.js` and run `pnpm install && pnpm lint`.
+
+**Without this, local lint passes clean while the bot still rejects** — sentence-case, command-name, and settings-heading violations go undetected locally.
+
+---
+
 ## Pre-Submission Code Quality Checklist
 
 The **ObsidianReviewBot** performs a static code scan after your PR is submitted. These issues cause `Changes requested` labels and require pushing fixes to the plugin repo. Run through this checklist **before** submitting to avoid the round-trip.
@@ -163,12 +200,18 @@ setting.setName('Server URL').setDesc('The base URL')
 ```
 
 ### ✅ Section headings via Setting API
-Never create `<h2>`/`<h3>` elements directly in settings tabs.
+Never create `<h2>`/`<h3>` elements directly in settings tabs. Also, headings must NOT be named "General", must NOT contain the plugin name, and must NOT contain the word "settings".
 ```typescript
-// ❌ Bad
+// ❌ Bad — HTML element
 containerEl.createEl('h2', { text: 'General' })
-// ✅ Good
+// ❌ Bad — "General" is explicitly blocked by no-problematic-settings-headings
 new Setting(containerEl).setName('General').setHeading()
+// ❌ Bad — plugin name in heading
+new Setting(containerEl).setName('Eagle plugin settings').setHeading()
+// ✅ Good — topic-specific name
+new Setting(containerEl).setName('Connection').setHeading()
+new Setting(containerEl).setName('Appearance').setHeading()
+new Setting(containerEl).setName('Advanced').setHeading()
 ```
 
 ### ✅ No async methods without await
@@ -179,6 +222,7 @@ async onClose(): Promise<void> { this.cleanup(); }
 // ✅ Good
 onClose(): void { this.cleanup(); }
 ```
+⚠️ **Exception — `ItemView.onOpen/onClose`**: Obsidian's `ItemView` base class declares these as `Promise<void>`, so TypeScript forces `async` even with no `await`. Keep `async` and use `/skip` with reason if the bot flags it.
 
 ### ✅ Unhandled promises — add void operator
 Float promises must be explicitly acknowledged.
@@ -315,15 +359,22 @@ If the PR gets `Changes requested` from **ObsidianReviewBot**, these are code-le
 
 | Bot message | Root cause | Fix |
 |-------------|-----------|-----|
-| `command name should not include the plugin name` | `addCommand({ name: 'PluginName: Do thing' })` | Remove prefix: `name: 'Do thing'` |
+| `command name should not include the plugin name` / `The command name should not include the plugin name` | `addCommand({ name: 'PluginName: Do thing' })` | Remove prefix: `name: 'Do thing'` |
+| `The command ID should not include the plugin ID` | `addCommand({ id: 'plugin-id-foo' })` | Strip plugin ID prefix: `id: 'foo'` |
 | `Use sentence case for UI text` | Title Case in `setName/setDesc/placeholder` | Convert to sentence case |
 | `use new Setting().setHeading() instead of HTML elements` | `containerEl.createEl('h2', ...)` in settings | Replace with `new Setting(el).setName('...').setHeading()` |
-| `Async method 'X' has no await expression` | Method marked async but has no await | Remove `async` keyword; change return type to `void` |
+| `Avoid using "settings" in settings headings` | Heading text contains the word "settings" | Rename to topic: "Appearance", "Advanced", "Connection" (NOT "General" — also rejected) |
+| `Avoid using "General" as a heading in settings` | `setName('General').setHeading()` is explicitly blocked by `no-problematic-settings-headings` | Use topic-specific names: "Connection", "Appearance", "Advanced", "Sync" |
+| `Avoid including the plugin name in settings headings` | Heading text contains the plugin name | Remove plugin name from heading text |
+| `Async method 'X' has no 'await' expression` | Method declared `async` but body has no `await` | Remove `async` keyword (and change return type to `void`). **Exception**: `ItemView.onOpen/onClose` must stay `async` — use `/skip` with explanation |
 | `Promises must be awaited... or marked with void` | Floating promise call | Add `void` operator: `void someAsync()` |
-| `Avoid setting styles directly via element.style` | Inline style assignment | Use `addClass/removeClass` or `setCssProps` |
-| `will use Object's default stringification format` | Unknown/object in template literal | Wrap with `String()` or extract `.message` for errors |
+| `Unexpected console statement. Only these console methods are allowed: warn, error, debug.` | `console.info` or `console.log` in source | Replace with `console.debug`, `console.warn`, or `console.error` |
 | `Disabling no-console is not allowed` | `eslint-disable no-console` directive | Remove directive; replace `console.*` with plugin logger |
-| `Unexpected undescribed directive comment` | `eslint-disable` without explanation | Add reason: `-- why this is needed` |
-| `Unused eslint-disable directive` | Rule not triggered locally but disable exists | Remove the unused directive |
+| `Unexpected undescribed directive comment` | Bare `// eslint-disable-next-line rule-name` with no ` -- reason` | Append ` -- <reason>` to every eslint-disable comment |
+| `Unused eslint-disable directive` | Stale eslint-disable left after refactor | Remove the directive entirely |
+| `will use Object's default stringification format` | Unknown/object in template literal | Wrap with `String()` or extract `.message` for errors |
+| `Avoid setting styles directly via element.style` | Inline style assignment | Use `addClass/removeClass` or `setCssProps` |
+| `Unexpected any. Specify a different type.` | `any` type annotation in source | Replace with `unknown`, a specific type, or an interface. **The eslint-disable directive for this rule is also banned** — cannot suppress, must fix. For custom workspace events use module augmentation in `src/types/obsidian-augments.d.ts`. For private shapes use `as unknown as { field?: T }`. |
 | `Use Vault#configDir instead of .obsidian` | Hardcoded `.obsidian` path | Replace with `this.app.vault.configDir` |
 | `This assertion is unnecessary` | `as Type` when type already matches | Remove the type assertion |
+| `` `config` is deprecated `` | `tseslint.config(...)` in `eslint.config.js` | ⚠️ **False positive** — `tseslint.defineConfig()` does not exist in typescript-eslint 8.x. Use `/skip` with: "tseslint.defineConfig() does not exist in typescript-eslint 8.x — tseslint.config() is the only available API" |
