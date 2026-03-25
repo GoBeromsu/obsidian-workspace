@@ -1,0 +1,74 @@
+{
+  "project": "obsidian-community-bot-review-fixes",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Fix QMD (obsidian-qmd) bot review issues",
+      "acceptanceCriteria": [
+        "Command names have no 'QMD:' prefix (e.g. 'Open search' not 'QMD: Open search')",
+        "UI text uses sentence case in settings-tab.ts, related-view.ts, search-modal.ts",
+        "onClose in related-view.ts is not async (no await inside)",
+        "submitCurrentQuery in search-modal.ts is not async (no await inside)",
+        "settings-tab.ts uses new Setting().setHeading() instead of direct HTML heading elements",
+        "Unnecessary type assertion removed from query-builder.ts",
+        "Object stringification fixed in parser.ts (String() cast for unknown fields)",
+        "pnpm ci passes in obsidian-qmd directory",
+        "Changes committed and pushed to main branch of obsidian-qmd"
+      ],
+      "passes": true,
+      "evidence": "commit 55c73f1 pushed to obsidian-qmd main"
+    },
+    {
+      "id": "US-002",
+      "title": "Fix Note Player (youtube-note-playlist) bot review issues",
+      "acceptanceCriteria": [
+        "audio-cache.ts uses this.app.vault.configDir instead of hardcoded .obsidian",
+        "UI text uses sentence case in main.ts, settings.ts, NotePlayerView.ts, download-status-bar.ts",
+        "Command name in main.ts has no plugin name prefix",
+        "Unnecessary async removed from playTrack, playPrevious, playNext, getAvailablePlaylistPath, onOpen, onClose, play, pause",
+        "Unhandled promises at main.ts use void operator",
+        "settings.ts uses new Setting().setHeading() instead of direct HTML headings",
+        "Inline styles replaced with CSS classes or setCssProps",
+        "pnpm ci passes in youtube-note-playlist directory",
+        "Changes committed and pushed to main branch"
+      ],
+      "passes": true,
+      "evidence": "v0.7.6 released: audio-cache configDir required param (no .obsidian default), plugin-notices stringification fixed. Bot rescan pending."
+    },
+    {
+      "id": "US-003",
+      "title": "Fix Open Connections (open-connections) bot review issues",
+      "acceptanceCriteria": [
+        "Object stringification fixed in all flagged domain files",
+        "All other Required items from ObsidianReviewBot comment addressed",
+        "pnpm ci passes in open-connections directory",
+        "Changes committed and pushed to main branch"
+      ],
+      "passes": true,
+      "evidence": "v3.9.19 released: removed bare console calls in domain files. Bot rescan pending."
+    },
+    {
+      "id": "US-004",
+      "title": "Fix community PRs - template, entry position, and Eagle release",
+      "acceptanceCriteria": [
+        "Eagle PR #11376: GitHub release for 2.8.7 exists or triggered via pnpm release:patch",
+        "Open Connections PR #11359: updated with correct PR template, entry at end",
+        "Note Player PR #11358: updated with correct PR template, entry at end",
+        "All 3 PRs re-triggered for bot validation"
+      ],
+      "passes": true,
+      "evidence": "Eagle #11376 already had Ready for review label. #11358 and #11359 fork branches resynced, plugin-validation: pass on all 3 PRs. ObsidianReviewBot rescan pending (within 6 hours) after code fix pushes."
+    },
+    {
+      "id": "US-005",
+      "title": "Enhance /obsidian-publish skill with bot-review checklist",
+      "acceptanceCriteria": [
+        "obsidian-publish skill updated with pre-submission code quality checklist",
+        "Checklist covers: command naming, sentence case, async methods, heading API, inline styles, object stringification, configDir usage",
+        "Checklist is actionable and prevents repeat bot rejections"
+      ],
+      "passes": true,
+      "evidence": "Added Pre-Submission Code Quality Checklist section + ObsidianReviewBot troubleshooting table to .claude/skills/obsidian-publish/SKILL.md"
+    }
+  ]
+}

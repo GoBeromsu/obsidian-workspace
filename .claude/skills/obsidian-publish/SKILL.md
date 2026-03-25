@@ -1,0 +1,329 @@
+---
+name: obsidian-publish
+description: Guide for submitting an Obsidian plugin to the community marketplace for the first time. Use this skill when the user asks to "publish", "submit", "release to community", "add to obsidian community plugins", "PR to obsidian-releases", or wants to know what to do before their first community release. Also trigger when the user asks for a publish checklist, wants to verify plugin submission readiness, needs to fix bot validation errors ("Validation failed" label), or wants to re-trigger the bot after fixing issues. This is distinct from ongoing `pnpm release:*` version bumps — it covers the one-time community-plugins.json PR flow and all post-submission bot feedback loops.
+---
+
+# Obsidian Publish
+
+First-time submission of a plugin to the Obsidian community marketplace.
+
+This is a **one-time process** distinct from ongoing `pnpm release:*` version bumps. The goal: get the plugin listed in [obsidianmd/obsidian-releases](https://github.com/obsidianmd/obsidian-releases).
+
+---
+
+## Step 0: Run Code Review Agent (Before Submitting)
+
+Run the `agents/code-review.md` agent to simulate ObsidianReviewBot's static analysis **before** submitting the PR. This prevents the round-trip of submitting → bot rejects → fixing → re-triggering.
+
+```bash
+# Invoke from main context — reads agents/code-review.md and scans the plugin directory
+# Prompt: "Run the obsidian-publish code-review agent on <plugin-path>"
+```
+
+The agent checks all 25+ `eslint-plugin-obsidianmd` rules (🔴 Required + 🟡 Recommended) and produces a structured report. **Fix all 🔴 Required issues before proceeding to Step 1.**
+
+See `agents/code-review.md` for the full rule set and grep patterns.
+
+---
+
+## Step 1: Run the Readiness Check
+
+Run this from the plugin's root directory:
+
+```bash
+python3 /Users/beomsu/Documents/Dev/Obsidian-Plugins/.claude/skills/obsidian-publish/scripts/check-publish-readiness.py
+```
+
+The script checks all MUST items deterministically:
+- Required files (README.md, LICENSE, manifest.json)
+- manifest.json fields, format rules, and **community bot rules**
+- Version consistency (manifest == package.json == git tag)
+- Code quality (no sample names, no `var`, no `window.app`, no direct `activeLeaf`)
+- Platform flag (`isDesktopOnly`) if Node/Electron APIs are used
+
+**Block on any ❌ FAIL.** Fix all failures before proceeding. ⚠️ WARN items are advisory.
+
+---
+
+## Step 2: Ensure a GitHub Release Exists
+
+The community bot checks that the version in `manifest.json` has a corresponding GitHub Release with the required assets.
+
+If you haven't released yet, run from the plugin directory:
+```bash
+pnpm release:patch   # or minor/major
+```
+
+This runs CI → bumps version → pushes tag → GitHub Actions creates the release automatically.
+
+Verify the release has these assets:
+- `main.js` ✅ required
+- `manifest.json` ✅ required
+- `styles.css` optional
+
+⚠️ **Release name format**: The GitHub release title must match the **exact version number** in `manifest.json` — no `v` prefix (e.g. `2.8.5` not `v2.8.5`). Check your release.yml to confirm the title format.
+
+---
+
+## Step 3: Submit the Community PR
+
+Use the automated script to handle the entire PR submission flow:
+
+```bash
+python3 /Users/beomsu/Documents/Dev/Obsidian-Plugins/.claude/skills/obsidian-publish/scripts/submit-community-pr.py
+```
+
+This script:
+1. Reads `manifest.json` for plugin metadata
+2. Syncs your fork of `obsidianmd/obsidian-releases` with upstream
+3. Creates branch `add-<plugin-id>`
+4. Appends your entry at the **end** of `community-plugins.json`
+5. Commits and pushes
+6. Opens a PR using the exact official template
+
+### If doing it manually:
+
+**3a. Fork the releases repo** (one-time):
+```bash
+gh repo fork obsidianmd/obsidian-releases --clone=false
+```
+
+**3b. Clone and sync your fork:**
+```bash
+cd /tmp && gh repo clone <your-username>/obsidian-releases
+cd obsidian-releases
+git remote add upstream https://github.com/obsidianmd/obsidian-releases.git
+git fetch upstream && git rebase upstream/master
+git push origin master --force
+```
+
+**3c. Add your plugin entry at the END:**
+
+```python
+import json
+plugins = json.loads(open('community-plugins.json').read())
+plugins.append({"id": "<plugin-id>", "name": "<Plugin Name>", "author": "<Author>", "description": "<Description ending with period.>", "repo": "<github-username>/<repo-name>"})
+open('community-plugins.json', 'w').write(json.dumps(plugins, indent=2) + '\n')
+```
+
+> ⚠️ The bot **requires the entry to be at the very end** of the array. Never insert alphabetically.
+
+**3d. Commit, push, open PR:**
+```bash
+git checkout -b add-<plugin-id>
+git add community-plugins.json
+git commit -m "Add plugin: <Plugin Name>"
+git push origin add-<plugin-id>
+gh pr create \
+  --repo obsidianmd/obsidian-releases \
+  --head <your-username>:add-<plugin-id> \
+  --base master \
+  --title "Add plugin: <Plugin Name>" \
+  --body-file /tmp/pr-body.md
+```
+
+The PR body **must use the exact official template** (see `references/pr-template.md`). Use `--body-file` with the template filled in — never compose freehand.
+
+**3e. After submitting:**
+
+The bot validates automatically within minutes. Labels:
+- `Ready for review` — passed validation, waiting for human review
+- `Validation failed` — fix issues, then push a small change to trigger re-check
+
+To trigger re-check: push any change to the branch (e.g., add/remove a trailing newline).
+
+---
+
+## Step 4: Announce
+
+Once merged, announce in the [Obsidian forum](https://forum.obsidian.md) or Discord `#updates` channel.
+
+---
+
+## Pre-Submission Code Quality Checklist
+
+The **ObsidianReviewBot** performs a static code scan after your PR is submitted. These issues cause `Changes requested` labels and require pushing fixes to the plugin repo. Run through this checklist **before** submitting to avoid the round-trip.
+
+### ✅ Command names — no plugin name prefix
+Obsidian automatically prepends the plugin name in the UI. Remove it from `addCommand({ name: ... })`.
+```typescript
+// ❌ Bad
+name: 'QMD: Open search'
+// ✅ Good
+name: 'Open search'
+```
+
+### ✅ Sentence case for all UI text
+`setName()`, `setDesc()`, `addButton`, `placeholder`, headings — all sentence case.
+```typescript
+// ❌ Bad
+setting.setName('Server URL').setDesc('The Base URL')
+// ✅ Good
+setting.setName('Server URL').setDesc('The base URL')
+```
+
+### ✅ Section headings via Setting API
+Never create `<h2>`/`<h3>` elements directly in settings tabs.
+```typescript
+// ❌ Bad
+containerEl.createEl('h2', { text: 'General' })
+// ✅ Good
+new Setting(containerEl).setName('General').setHeading()
+```
+
+### ✅ No async methods without await
+Remove `async` from methods that have no `await` expression inside.
+```typescript
+// ❌ Bad — async but no await
+async onClose(): Promise<void> { this.cleanup(); }
+// ✅ Good
+onClose(): void { this.cleanup(); }
+```
+
+### ✅ Unhandled promises — add void operator
+Float promises must be explicitly acknowledged.
+```typescript
+// ❌ Bad
+someAsyncFn();
+// ✅ Good
+void someAsyncFn();
+```
+
+### ✅ No inline styles — use CSS classes or setCssProps
+```typescript
+// ❌ Bad
+el.style.display = 'none';
+el.style.width = '100%';
+// ✅ Good
+el.addClass('is-hidden');
+el.setCssProps({ '--my-width': '100%' });
+```
+
+### ✅ Object stringification — no unknown/object in template literals
+```typescript
+// ❌ Bad — unknown/object in template literal
+`Result: ${someUnknown}` // → "[object Object]"
+// ✅ Good
+`Result: ${String(someUnknown)}`
+// For errors:
+error instanceof Error ? error.message : String(error)
+```
+
+### ✅ No eslint-disable for no-console
+The bot runs with `no-console: error` and disallows disabling it. Use a plugin logger instead.
+```typescript
+// ❌ Bad — Obsidian bot rejects this
+// eslint-disable-next-line no-console
+console.log('...')
+// ✅ Good
+this.logger.info('...')  // Use PluginLogger pattern
+```
+
+### ✅ vault.configDir not hardcoded .obsidian
+```typescript
+// ❌ Bad
+const configPath = path.join(vaultPath, '.obsidian')
+// ✅ Good
+const configPath = path.join(vaultPath, this.app.vault.configDir)
+```
+
+### ✅ No unnecessary type assertions
+```typescript
+// ❌ Bad — assertion doesn't change type
+const x = value as string;  // if value is already string
+// ✅ Good — remove it
+const x = value;
+```
+
+### ✅ eslint-disable comments need descriptions
+```typescript
+// ❌ Bad
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// ✅ Good
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- third-party API returns untyped data
+```
+
+---
+
+## Community Bot Rules (learned from rejections)
+
+These rules are **not** in the official docs but the bot enforces them:
+
+| Field | Rule |
+|-------|------|
+| `id` | No `"obsidian"` (per spec) AND no `"plugin"` — bot rejects both |
+| `name` | No `"Obsidian"` — redundant and adds clutter |
+| `description` | No `"Obsidian"` — same reason |
+| `authorUrl` | Must NOT point to the plugin's own GitHub repo |
+| Entry position | Must be **last** in `community-plugins.json` |
+| PR template | Must use **exact** official template from `.github/PULL_REQUEST_TEMPLATE/plugin.md` |
+| Release title | Must match exact version (e.g. `2.8.5` not `v2.8.5`) |
+
+## Quick Reference: All Submission Requirements
+
+| Item | Rule |
+|------|------|
+| Plugin ID | Unique, no `"obsidian"`, no `"plugin"`, matches manifest.json |
+| Plugin name | No `"Obsidian"` |
+| Description | No `"Obsidian"`, < 250 chars, ends `.`, no emoji |
+| authorUrl | Author profile URL, not the plugin repo URL |
+| minAppVersion | Set to minimum compatible Obsidian version |
+| isDesktopOnly | `true` if using Node.js / Electron APIs |
+| Release assets | `main.js` + `manifest.json` required |
+| Release title | Exact version number, no `v` prefix |
+| PR title | `Add plugin: <Name>` |
+| PR body | Exact official template with checkboxes filled |
+| Entry position | Last in `community-plugins.json` |
+
+See `references/pr-template.md` for the exact PR body to use.
+
+---
+
+## Troubleshooting: Bot Rejection Fixes
+
+If the PR gets `Validation failed` label, read the bot's comment and match it below.
+
+| Bot message | Root cause | Fix |
+|-------------|-----------|-----|
+| `did not follow the pull request template` | PR body doesn't match official template exactly | Re-run `submit-community-pr.py` — it fetches the live template |
+| `newly added entry is not at the end` | Entry was inserted alphabetically, not appended | Check `community-plugins.json` — entry must be last; re-run script |
+| `id contains "plugin"` | Plugin ID has the word "plugin" | Rename `id` in `manifest.json`, re-release, re-submit |
+| `name contains "Obsidian"` | Plugin name includes "Obsidian" | Rename in `manifest.json` (e.g. "Obsidian Note Player" → "Note Player") |
+| `description contains "Obsidian"` | Description mentions "Obsidian" | Rephrase: use "your vault" or "your notes" instead |
+| `authorUrl points to plugin repo` | `authorUrl` is the plugin's own GitHub URL | Change to your author profile URL (e.g. `https://github.com/YourUser`) |
+| Release not found / wrong version | GitHub release name has `v` prefix or doesn't exist | Verify release title is `2.8.5` not `v2.8.5`; check `release.yml` |
+
+### After fixing, re-trigger bot validation
+
+The bot re-validates whenever a new commit is pushed to the PR branch:
+
+```bash
+# From inside the obsidian-releases fork directory
+cd /tmp/obsidian-releases
+git checkout add-<plugin-id>
+git commit --allow-empty -m "re-trigger validation"
+git push origin add-<plugin-id>
+```
+
+Or just re-run the full `submit-community-pr.py` script — it force-pushes and handles everything.
+
+---
+
+## Troubleshooting: ObsidianReviewBot Code Issues
+
+If the PR gets `Changes requested` from **ObsidianReviewBot**, these are code-level violations in the plugin repo. Fix them there and push — the bot rescans within 6 hours, or sooner if you push a new commit.
+
+| Bot message | Root cause | Fix |
+|-------------|-----------|-----|
+| `command name should not include the plugin name` | `addCommand({ name: 'PluginName: Do thing' })` | Remove prefix: `name: 'Do thing'` |
+| `Use sentence case for UI text` | Title Case in `setName/setDesc/placeholder` | Convert to sentence case |
+| `use new Setting().setHeading() instead of HTML elements` | `containerEl.createEl('h2', ...)` in settings | Replace with `new Setting(el).setName('...').setHeading()` |
+| `Async method 'X' has no await expression` | Method marked async but has no await | Remove `async` keyword; change return type to `void` |
+| `Promises must be awaited... or marked with void` | Floating promise call | Add `void` operator: `void someAsync()` |
+| `Avoid setting styles directly via element.style` | Inline style assignment | Use `addClass/removeClass` or `setCssProps` |
+| `will use Object's default stringification format` | Unknown/object in template literal | Wrap with `String()` or extract `.message` for errors |
+| `Disabling no-console is not allowed` | `eslint-disable no-console` directive | Remove directive; replace `console.*` with plugin logger |
+| `Unexpected undescribed directive comment` | `eslint-disable` without explanation | Add reason: `-- why this is needed` |
+| `Unused eslint-disable directive` | Rule not triggered locally but disable exists | Remove the unused directive |
+| `Use Vault#configDir instead of .obsidian` | Hardcoded `.obsidian` path | Replace with `this.app.vault.configDir` |
+| `This assertion is unnecessary` | `as Type` when type already matches | Remove the type assertion |
