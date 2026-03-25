@@ -141,24 +141,48 @@ Bot message: `"Promises must be awaited, end with a call to .catch, end with a c
 
 Variables typed as `unknown`, `object`, or a non-primitive type will produce `[object Object]` when interpolated in template literals.
 
+**⚠️ Critical**: `String(unknownValue)` does **NOT** satisfy this rule. The rule fires on the *input type*, not the output. You must narrow to a primitive type with `typeof` before any string conversion.
+
 ```typescript
-// ❌ Bad — error: unknown
+// ❌ Bad — bare interpolation of unknown
 `Failed: ${error}`
 
-// ❌ Bad — value: Record<string, unknown>
-`Result: ${value}`
-
-// ✅ Good — errors
-`Failed: ${error instanceof Error ? error.message : String(error)}`
-
-// ✅ Good — unknown values
+// ❌ Bad — String() on unknown STILL triggers the rule
 `Result: ${String(value)}`
 
-// ✅ Good — Record values (e.g. from parsed JSON)
+// ❌ Bad — String() on Record value STILL triggers the rule
 `ID: ${String((item as Record<string, unknown>).id ?? '')}`
+
+// ✅ Good — errors: instanceof + cast to primitive
+`Failed: ${error instanceof Error ? error.message : String(error as string | number | boolean | bigint | symbol)}`
+
+// ✅ Good — unknown values: typeof narrowing first
+const v = someUnknown;
+typeof v === 'string' ? v : String(v as string | number | boolean | bigint | symbol)
+
+// ✅ Good — Record fields from JSON (e.g. in object mapping)
+const row = item as Record<string, unknown>;
+return {
+  id: typeof row.id === 'string' ? row.id : '',
+  name: typeof row.name === 'string' ? row.name : '',
+};
+
+// ✅ Good — plugin-logger pattern: extract to typed string variable
+const repr: string = typeof error === 'object'
+  ? JSON.stringify(error as Record<string, unknown>)
+  : String(error as string | number | boolean | bigint | symbol);
+suffix = ` | ${repr}`;
+
+// ✅ Good — template interpolation with Record<string, unknown> values
+// (null/undefined already handled above with early return)
+return typeof value === 'object'
+  ? JSON.stringify(value as Record<string, unknown>)
+  : String(value as string | number | boolean | bigint | symbol);
 ```
 
 Bot message: `"'X' will use Object's default stringification format ('[object Object]') when stringified."`
+
+**Note — local lint gap**: This rule (`@typescript-eslint/no-base-to-string`) is NOT enabled in the default local ESLint config. `pnpm lint` passes locally even when the bot rejects. See the section below.
 
 ---
 
@@ -223,6 +247,43 @@ const name = getValue();
 ```
 
 Bot message: `"This assertion is unnecessary since it does not change the type of the expression."`
+
+---
+
+## Local lint vs bot scan divergence
+
+The bot runs `@typescript-eslint/no-base-to-string` which is NOT enabled in the default local ESLint config. This means:
+
+- `pnpm lint` passes locally with 0 errors
+- Bot still rejects with `'X' will use Object's default stringification format`
+
+**Do not trust local lint alone** for these patterns. The bot-specific manual checklist in SKILL.md must be checked even when lint is clean.
+
+### Rule: `no-base-to-string` is stricter than `String()`
+
+`String(unknownValue)` does NOT satisfy this rule. The rule fires on the TYPE of the input, not the output. Fix requires explicit `typeof` narrowing BEFORE the string conversion:
+
+```typescript
+// ❌ STILL fails — String() doesn't narrow the type
+String((item as Record<string, unknown>).snippet ?? '')
+
+// ✅ Correct
+const v = (item as Record<string, unknown>).snippet;
+typeof v === 'string' ? v : ''
+
+// ✅ Correct for error objects in plugin-logger
+const repr: string = typeof error === 'object'
+  ? JSON.stringify(error as Record<string, unknown>)
+  : String(error as string | number | boolean | bigint | symbol);
+suffix = ` | ${repr}`;
+
+// ✅ Correct for template interpolation with Record values
+const value = params[key]; // unknown
+// value null/undefined already handled above
+return typeof value === 'object'
+  ? JSON.stringify(value as Record<string, unknown>)
+  : String(value as string | number | boolean | bigint | symbol);
+```
 
 ---
 

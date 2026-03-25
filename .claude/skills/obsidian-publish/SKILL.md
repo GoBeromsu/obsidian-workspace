@@ -142,6 +142,8 @@ Once merged, announce in the [Obsidian forum](https://forum.obsidian.md) or Disc
 
 ## ESLint Tooling Health Check
 
+> ⚠️ **`pnpm lint` passing does NOT guarantee bot approval.** The bot runs `@typescript-eslint/no-base-to-string` and other rules not in the default local config. Always run the Bot-Specific Manual Checklist even when lint is clean.
+
 Run this before the code quality checklist. Tooling misconfiguration causes the bot to flag false violations or miss real ones.
 
 ```bash
@@ -245,13 +247,21 @@ el.setCssProps({ '--my-width': '100%' });
 
 ### ✅ Object stringification — no unknown/object in template literals
 ```typescript
-// ❌ Bad — unknown/object in template literal
+// ❌ Bad — bare interpolation of unknown/object
 `Result: ${someUnknown}` // → "[object Object]"
-// ✅ Good
+
+// ❌ Also bad — String() on unknown STILL triggers no-base-to-string
 `Result: ${String(someUnknown)}`
-// For errors:
-error instanceof Error ? error.message : String(error)
+
+// ✅ Correct — typeof narrowing before conversion
+const v = someUnknown;
+typeof v === 'string' ? v : String(v as string | number | boolean | bigint | symbol)
+
+// ✅ For errors
+error instanceof Error ? error.message : String(error as string | number | boolean | bigint | symbol)
 ```
+
+> ⚠️ **`String(unknownValue)` does NOT fix this rule.** The rule (`@typescript-eslint/no-base-to-string`) fires on the *input type*, not the output. You must use `typeof` narrowing **before** any string conversion.
 
 ### ✅ No eslint-disable for no-console
 The bot runs with `no-console: error` and disallows disabling it. Use a plugin logger instead.
@@ -374,7 +384,7 @@ If the PR gets `Changes requested` from **ObsidianReviewBot**, these are code-le
 | `Disabling no-console is not allowed` | `eslint-disable no-console` directive | Remove directive; replace `console.*` with plugin logger |
 | `Unexpected undescribed directive comment` | Bare `// eslint-disable-next-line rule-name` with no ` -- reason` | Append ` -- <reason>` to every eslint-disable comment |
 | `Unused eslint-disable directive` | Stale eslint-disable left after refactor | Remove the directive entirely |
-| `will use Object's default stringification format` | Unknown/object in template literal | Wrap with `String()` or extract `.message` for errors |
+| `will use Object's default stringification format` | `String(unknownVal)` or `${unknownVal}` — rule fires on input TYPE | Use `typeof x === 'string' ? x : ''` — NOT `String(x)`. `String()` on `unknown` still triggers the rule. For errors: `err instanceof Error ? err.message : String(err as string \| number \| boolean \| bigint \| symbol)` |
 | `Avoid setting styles directly via element.style` | Inline style assignment | Use `addClass/removeClass` or `setCssProps` |
 | `Unexpected any. Specify a different type.` | `any` type annotation in source | Replace with `unknown`, a specific type, or an interface. **The eslint-disable directive for this rule is also banned** — cannot suppress, must fix. For custom workspace events use module augmentation in `src/types/obsidian-augments.d.ts`. For private shapes use `as unknown as { field?: T }`. |
 | `Use Vault#configDir instead of .obsidian` | Hardcoded `.obsidian` path | Replace with `this.app.vault.configDir` |
