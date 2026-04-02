@@ -1,6 +1,22 @@
 ---
-name: obsidian-propagate
+aliases: []
+author: 고범수
+cli:
+created_at: 2026-03-27
+created_by: "[[claude]]"
+date_created: 2026-03-28
+date_modified: 2026-03-31
 description: Propagate boiler-template changes to downstream plugins. Use this skill when the user asks to "sync", "propagate", "push template changes", check drift/sync status, or after modifying files under tooling/shared/ or tooling/sync/.
+docs_url: https://github.com/GoBeromsu/obsidian-boiler-template#readme
+modified_at: 2026-03-27
+modified_by: "[[claude]]"
+name: obsidian-propagate
+public: false
+scope: obsidian-workspace
+source_url: https://github.com/GoBeromsu/obsidian-boiler-template
+tags: []
+type: skill
+used_by: []
 ---
 
 # Obsidian Propagate
@@ -21,16 +37,41 @@ Managed targets are listed in `tooling/sync/targets.json`:
 
 Synced artifacts include: scripts (dev, version, release, release-notes), infra (.editorconfig, eslint.base.js, commitlint, husky hooks), GitHub templates (issue/PR), shared source modules (plugin-notices, plugin-logger, debounce-controller, settings-migration, styles.base.css), and generated CI/Release workflows.
 
+## CLI Pipeline
+
+Quick-reference commands for the most common operations:
+
+```bash
+# Dry run (always first)
+cd /Users/beomsu/Documents/03. Area/obsidian-workspace/obsidian-boiler-template
+node scripts/sync-to-plugins.mjs --dry-run
+
+# Check drift (exit non-zero if drifted)
+node scripts/sync-to-plugins.mjs --check
+
+# Apply to all targets
+node scripts/sync-to-plugins.mjs
+
+# Apply to specific targets
+node scripts/sync-to-plugins.mjs --targets=obsidian-eagle-plugin,obsidian-qmd
+
+# Run CI per target after sync
+cd /Users/beomsu/Documents/Dev/Obsidian-Plugins/<target-name> && pnpm run ci
+```
+
+---
+
 ## Workflow
 
 ### Step 1: Dry Run (always first)
 
 ```bash
-cd /Users/beomsu/Documents/Dev/Obsidian-Plugins/obsidian-boiler-template
+cd /Users/beomsu/Documents/03. Area/obsidian-workspace/obsidian-boiler-template
 node scripts/sync-to-plugins.mjs --dry-run
 ```
 
 If targeting specific plugins:
+
 ```bash
 node scripts/sync-to-plugins.mjs --dry-run --targets=obsidian-eagle-plugin,obsidian-qmd
 ```
@@ -43,7 +84,7 @@ Present a summary table before applying:
 
 | Target | Changes | Details |
 |--------|---------|---------|
-| plugin-name | 3 | UPDATE ci.yml, CREATE eslint.base.js, ... |
+| plugin-name | 3 | UPDATE ci.yml, CREATE eslint.base.js, … |
 
 Ask the user to confirm before proceeding.
 
@@ -57,6 +98,7 @@ git branch --show-current
 ```
 
 If the target is on its default branch (main or master), create a sync branch:
+
 ```bash
 git checkout -b sync/boiler-template
 ```
@@ -66,11 +108,12 @@ git checkout -b sync/boiler-template
 ### Step 4: Apply
 
 ```bash
-cd /Users/beomsu/Documents/Dev/Obsidian-Plugins/obsidian-boiler-template
+cd /Users/beomsu/Documents/03. Area/obsidian-workspace/obsidian-boiler-template
 node scripts/sync-to-plugins.mjs
 ```
 
 Or selectively:
+
 ```bash
 node scripts/sync-to-plugins.mjs --targets=obsidian-eagle-plugin,obsidian-qmd
 ```
@@ -78,6 +121,7 @@ node scripts/sync-to-plugins.mjs --targets=obsidian-eagle-plugin,obsidian-qmd
 ### Step 5: Run CI on Each Target
 
 For each target that received changes:
+
 ```bash
 cd /Users/beomsu/Documents/Dev/Obsidian-Plugins/<target-name>
 pnpm run ci
@@ -100,7 +144,7 @@ Present a final report:
 When the user asks to "check drift" or "check sync status":
 
 ```bash
-cd /Users/beomsu/Documents/Dev/Obsidian-Plugins/obsidian-boiler-template
+cd /Users/beomsu/Documents/03. Area/obsidian-workspace/obsidian-boiler-template
 node scripts/sync-to-plugins.mjs --check
 ```
 
