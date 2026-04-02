@@ -11,6 +11,7 @@
 | [Rule 3](#rule-3-single-responsibility-principle--absolute) | One file = one responsibility |
 | [Rule 4](#rule-4-200-loc-hard-limit) | 200 LOC max per `.ts`/`.tsx` file |
 | [Rule 5](#rule-5-obsidian-native-ui-only) | Use Obsidian components and CSS variables only, no raw HTML |
+| [Rule 6](#rule-6-no-hardcoded-obsidian-config-folder) | Never hardcode `.obsidian` in plugin runtime code |
 
 ### Grep enforcement commands
 
@@ -157,6 +158,36 @@ rg "#[0-9a-fA-F]{3,8}|rgb\(|rgba\(" */src/ --glob="*.ts"
 
 # Find inline styles
 rg 'style="' */src/ui/
+```
+
+## Rule 6: No Hardcoded Obsidian Config Folder
+
+Obsidian's configuration folder is **not necessarily `.obsidian`**. Users can change it.
+
+**In plugin runtime code, never hardcode `.obsidian`.** Use `Vault#configDir` instead:
+
+```ts
+const pluginDataPath = `${app.vault.configDir}/plugins/${plugin.manifest.id}/data.json`
+```
+
+**Use this rule when**:
+- Reading or writing plugin data
+- Resolving plugin-local cache/database paths
+- Building paths under `plugins/<plugin-id>/...`
+
+**Do not do this in runtime code**:
+
+```ts
+const path = `${vaultBasePath}/.obsidian/plugins/${pluginId}/data.json`
+```
+
+**Why**: a hardcoded `.obsidian` path breaks users who configured a different vault config directory.
+
+Check for violations:
+
+```bash
+rg -n "\.obsidian" */src/ --glob="*.ts"
+rg -n "configDir" */src/ --glob="*.ts"
 ```
 
 ---
