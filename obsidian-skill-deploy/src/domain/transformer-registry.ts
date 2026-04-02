@@ -10,8 +10,4 @@ export class TransformerRegistry {
 	get(id: ProviderId): ProviderTransformer | undefined {
 		return this.transformers.get(id);
 	}
-
-	getAll(): ProviderTransformer[] {
-		return [...this.transformers.values()];
-	}
 }
