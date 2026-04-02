@@ -1,0 +1,48 @@
+name: Release Gate Report
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate plugin manifest
+        run: node workspace/validate-manifest.mjs
+
+      - name: Generate workspace catalog
+        run: node workspace/generate-catalog.mjs
+
+      - name: Generate release readiness report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node workspace/release-readiness-report.mjs --markdown-out .artifacts/release-readiness.md --json-out .artifacts/release-readiness.json
+
+      - name: Add step summary
+        run: cat .artifacts/release-readiness.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release readiness artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness-report
+          path: |
+            .artifacts/release-readiness.md
+            .artifacts/release-readiness.json
+            docs/workspace-catalog.md

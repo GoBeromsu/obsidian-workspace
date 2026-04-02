@@ -1,6 +1,6 @@
 # Patterns
 
-> Proven code patterns used across the Obsidian plugin monorepo. Each pattern includes when to use it, when not to, and a code example.
+> Proven code patterns used across the Obsidian plugin submodule workspace. Each pattern includes when to use it, when not to, and a code example.
 
 ## Overview
 

@@ -2,6 +2,12 @@
 
 My Obsidian plugin ecosystem. Each plugin lives as an independent repository, linked here as submodules. **Your tools should fit your thinking, not the other way around.**
 
+This repository is a **submodule workspace** and portfolio control plane, not a package monorepo.
+
+- Plugin implementation and final releases live in child repos.
+- Shared deterministic contracts live in `obsidian-boiler-template`.
+- Portfolio visibility and release readiness live at the root.
+
 ## Plugins
 
 | Plugin | Description |
@@ -13,6 +19,19 @@ My Obsidian plugin ecosystem. Each plugin lives as an independent repository, li
 | [obsidian-qmd](https://github.com/GoBeromsu/obsidian-qmd) | QMD semantic search integration |
 | [youtube-note-playlist](https://github.com/GoBeromsu/obsidian-note-player) | YouTube music player via yt-dlp |
 | [obsidian-boiler-template](https://github.com/GoBeromsu/obsidian-boiler-template) | Seed template for new plugins — fork this to start |
+
+## Control Plane
+
+The root repo owns:
+
+- [workspace plugin manifest](workspace/plugins.manifest.json)
+- [workspace topology](docs/workspace-topology.md)
+- [plugin architecture contract](docs/plugin-architecture.md)
+- [release architecture](docs/release-architecture.md)
+- [release note contract](docs/release-note-contract.md)
+- [generated workspace catalog](docs/workspace-catalog.md)
+
+The current root-level release gate is report-only. It validates portfolio metadata and emits a release readiness report without taking release authority away from child plugin repos.
 
 ## Quick Start
 

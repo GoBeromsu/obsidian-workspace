@@ -1,6 +1,6 @@
 # Collaboration
 
-> Multi-agent collaboration protocol for the Obsidian plugin monorepo. Defines agent roles, ownership boundaries, and handoff rules.
+> Multi-agent collaboration protocol for the Obsidian plugin submodule workspace. Defines agent roles, ownership boundaries, and handoff rules.
 
 ## Start Here
 

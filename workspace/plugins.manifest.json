@@ -1,0 +1,226 @@
+{
+  "workspace_kind": "submodule-workspace",
+  "manifest_version": 1,
+  "generated_catalog": "docs/workspace-catalog.md",
+  "plugins": [
+    {
+      "name": "Metadata Auto Classifier",
+      "repo_path": "Metadata-Auto-Classifier",
+      "repo_kind": "submodule",
+      "repo_slug": "GoBeromsu/Metadata-Auto-Classifier",
+      "git_branch": "master",
+      "plugin_id": "metadata-auto-classifier",
+      "portfolio_role": "plugin",
+      "release_kind": "stable",
+      "artifact_files": [
+        "main.js",
+        "manifest.json",
+        "styles.css",
+        "versions.json"
+      ],
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
+      "smoke_vault": "Test",
+      "smoke_commands": [
+        "obsidian vault=\"Test\" plugin:reload id=\"metadata-auto-classifier\""
+      ],
+      "risk_tier": "medium",
+      "notes": [
+        "Independent plugin repo",
+        "Settings-heavy UI; runtime smoke should include modal interactions"
+      ]
+    },
+    {
+      "name": "Bible Search",
+      "repo_path": "obsidian-bible-search",
+      "repo_kind": "submodule",
+      "repo_slug": "GoBeromsu/obsidian-bible-search",
+      "git_branch": "main",
+      "plugin_id": "obsidian-bible-search",
+      "portfolio_role": "plugin",
+      "release_kind": "stable",
+      "artifact_files": [
+        "main.js",
+        "manifest.json",
+        "styles.css",
+        "versions.json"
+      ],
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
+      "smoke_vault": "Test",
+      "smoke_commands": [
+        "obsidian vault=\"Test\" plugin:reload id=\"obsidian-bible-search\"",
+        "obsidian vault=\"Test\" command id=\"obsidian-bible-search:search-bible-verse\""
+      ],
+      "risk_tier": "medium",
+      "notes": [
+        "Private repo",
+        "Smoke evidence should include command-triggered modal proof"
+      ]
+    },
+    {
+      "name": "Boiler Template",
+      "repo_path": "obsidian-boiler-template",
+      "repo_kind": "submodule",
+      "repo_slug": "GoBeromsu/obsidian-boiler-template",
+      "git_branch": "master",
+      "plugin_id": "sample-plugin",
+      "portfolio_role": "template",
+      "release_kind": "stable",
+      "artifact_files": [
+        "main.js",
+        "manifest.json",
+        "styles.css",
+        "versions.json"
+      ],
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
+      "smoke_vault": "Test",
+      "smoke_commands": [
+        "pnpm --dir obsidian-boiler-template run ci",
+        "pnpm --dir obsidian-boiler-template run sync:check"
+      ],
+      "risk_tier": "high",
+      "notes": [
+        "Control-plane source of truth",
+        "Release readiness depends on downstream sync health"
+      ]
+    },
+    {
+      "name": "Eagle Plugin",
+      "repo_path": "obsidian-eagle-plugin",
+      "repo_kind": "submodule",
+      "repo_slug": "GoBeromsu/obsidian-eagle-plugin",
+      "git_branch": "main",
+      "plugin_id": "eagle",
+      "portfolio_role": "plugin",
+      "release_kind": "stable",
+      "artifact_files": [
+        "main.js",
+        "manifest.json",
+        "styles.css",
+        "versions.json"
+      ],
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
+      "smoke_vault": "Test",
+      "smoke_commands": [
+        "obsidian vault=\"Test\" plugin:reload id=\"eagle\""
+      ],
+      "risk_tier": "high",
+      "notes": [
+        "Depends on external Eagle runtime for deeper smoke coverage"
+      ]
+    },
+    {
+      "name": "QMD",
+      "repo_path": "obsidian-qmd",
+      "repo_kind": "submodule",
+      "repo_slug": "GoBeromsu/obsidian-qmd",
+      "git_branch": "main",
+      "plugin_id": "obsidian-qmd",
+      "portfolio_role": "plugin",
+      "release_kind": "stable",
+      "artifact_files": [
+        "main.js",
+        "manifest.json",
+        "styles.css",
+        "versions.json"
+      ],
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
+      "smoke_vault": "Test",
+      "smoke_commands": [
+        "obsidian vault=\"Test\" plugin:reload id=\"obsidian-qmd\"",
+        "obsidian vault=\"Test\" command id=\"obsidian-qmd:open-search\""
+      ],
+      "risk_tier": "high",
+      "notes": [
+        "Search view and related notes view are primary runtime surfaces"
+      ]
+    },
+    {
+      "name": "Skill Deploy",
+      "repo_path": "obsidian-skill-deploy",
+      "repo_kind": "root-local",
+      "repo_slug": null,
+      "git_branch": "main",
+      "plugin_id": "skill-deploy",
+      "portfolio_role": "plugin",
+      "release_kind": "incubator",
+      "artifact_files": [
+        "main.js",
+        "manifest.json",
+        "styles.css",
+        "versions.json"
+      ],
+      "ci_workflow": "ROOT_INTERNAL",
+      "release_workflow": "ROOT_INTERNAL",
+      "smoke_vault": "Test",
+      "smoke_commands": [
+        "pnpm --dir obsidian-skill-deploy run ci"
+      ],
+      "risk_tier": "medium",
+      "notes": [
+        "Promotion to independent repo/submodule is pending",
+        "Must not be treated as a fully releasable portfolio member until promoted"
+      ]
+    },
+    {
+      "name": "Open Connections",
+      "repo_path": "open-connections",
+      "repo_kind": "submodule",
+      "repo_slug": "GoBeromsu/open-connections",
+      "git_branch": "main",
+      "plugin_id": "open-connections",
+      "portfolio_role": "plugin",
+      "release_kind": "stable",
+      "artifact_files": [
+        "dist/main.js",
+        "dist/manifest.json",
+        "dist/styles.css",
+        "versions.json"
+      ],
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
+      "smoke_vault": "Test",
+      "smoke_commands": [
+        "obsidian vault=\"Test\" plugin:reload id=\"open-connections\"",
+        "obsidian vault=\"Test\" command id=\"open-connections:open-lookup-view\"",
+        "obsidian vault=\"Test\" eval code=\"(async()=>JSON.stringify(await app.plugins.plugins['open-connections']?.search_embed_model?.get_gpu_diag?.() ?? null))()\""
+      ],
+      "risk_tier": "critical",
+      "notes": [
+        "Local-model smoke is mandatory",
+        "Highest priority simplification target"
+      ]
+    },
+    {
+      "name": "Note Player",
+      "repo_path": "youtube-note-playlist",
+      "repo_kind": "submodule",
+      "repo_slug": "GoBeromsu/obsidian-note-player",
+      "git_branch": "main",
+      "plugin_id": "note-player",
+      "portfolio_role": "plugin",
+      "release_kind": "stable",
+      "artifact_files": [
+        "main.js",
+        "manifest.json",
+        "styles.css",
+        "versions.json"
+      ],
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
+      "smoke_vault": "Ataraxia",
+      "smoke_commands": [
+        "obsidian plugin:reload id=note-player",
+        "remote runtime verification in Ataraxia vault"
+      ],
+      "risk_tier": "high",
+      "notes": [
+        "Remote-only runtime verification remains the preferred smoke path"
+      ]
+    }
+  ]
+}

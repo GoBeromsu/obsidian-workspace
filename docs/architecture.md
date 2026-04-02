@@ -1,6 +1,6 @@
 # Architecture
 
-> How every Obsidian plugin in this monorepo is structured internally.
+> How every Obsidian plugin in this submodule workspace is structured internally.
 
 ## Quick Start
 

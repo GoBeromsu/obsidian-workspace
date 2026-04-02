@@ -1,6 +1,6 @@
 # Exploration Guide
 
-> How to navigate this monorepo, find what you need, and understand how things connect.
+> How to navigate this submodule workspace, find what you need, and understand how things connect.
 
 ## Quick Start
 
@@ -144,7 +144,7 @@ ui/views/qmd-search-view.ts  →  renders results in Obsidian view
 
 ## Grep Patterns
 
-Useful commands for navigating the monorepo:
+Useful commands for navigating the submodule workspace:
 
 ```bash
 # Find all plugin entry points
