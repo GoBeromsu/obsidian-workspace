@@ -9,7 +9,7 @@
 - Each production plugin lives in its own git repository.
 - The root repository coordinates portfolio state, shared contracts, and release readiness.
 - `obsidian-boiler-template` is the source of truth for deterministic shared code, lint/workflow contracts, and scaffolding.
-- `obsidian-skill-deploy` is currently a root-local incubator and should be promoted to an independent repo/submodule.
+- `obsidian-skill-deploy` is currently a root-local incubator and should be promoted to an independent repo/submodule under the target identity `agent-skill-deploy`.
 
 ## Topology
 
@@ -56,7 +56,7 @@ The root control plane should **not**:
 `obsidian-skill-deploy` is the only root-local releaseable plugin-shaped directory today. It should move through this lifecycle:
 
 1. Incubator inside root
-2. Independent repo with the same contract as other plugins
+2. Independent repo as `agent-skill-deploy` with the same contract as other plugins
 3. Added to `.gitmodules` and `workspace/plugins.manifest.json`
 4. Included in the same CI/release/smoke policy as other plugins
 

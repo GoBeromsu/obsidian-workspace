@@ -54,7 +54,7 @@
       ],
       "risk_tier": "medium",
       "notes": [
-        "Private repo",
+        "Public repo",
         "Smoke evidence should include command-triggered modal proof"
       ]
     },
@@ -140,7 +140,7 @@
       ]
     },
     {
-      "name": "Skill Deploy",
+      "name": "Agent Skill Deploy",
       "repo_path": "obsidian-skill-deploy",
       "repo_kind": "root-local",
       "repo_slug": null,
@@ -163,6 +163,7 @@
       "risk_tier": "medium",
       "notes": [
         "Promotion to independent repo/submodule is pending",
+        "Target promoted identity: GoBeromsu/agent-skill-deploy",
         "Must not be treated as a fully releasable portfolio member until promoted"
       ]
     },

@@ -14,7 +14,7 @@
 | Boiler Template | `obsidian-boiler-template` | `template` | `stable` | `master` | `high` | `Test` |
 | Eagle Plugin | `obsidian-eagle-plugin` | `plugin` | `stable` | `main` | `high` | `Test` |
 | QMD | `obsidian-qmd` | `plugin` | `stable` | `main` | `high` | `Test` |
-| Skill Deploy | `obsidian-skill-deploy` | `plugin` | `incubator` | `main` | `medium` | `Test` |
+| Agent Skill Deploy | `obsidian-skill-deploy` | `plugin` | `incubator` | `main` | `medium` | `Test` |
 | Open Connections | `open-connections` | `plugin` | `stable` | `main` | `critical` | `Test` |
 | Note Player | `youtube-note-playlist` | `plugin` | `stable` | `main` | `high` | `Ataraxia` |
 
@@ -42,7 +42,7 @@
 - Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
 - Smoke commands: `obsidian vault="Test" plugin:reload id="obsidian-bible-search"`, `obsidian vault="Test" command id="obsidian-bible-search:search-bible-verse"`
-- Notes: `Private repo`, `Smoke evidence should include command-triggered modal proof`
+- Notes: `Public repo`, `Smoke evidence should include command-triggered modal proof`
 
 ### Boiler Template
 
@@ -80,7 +80,7 @@
 - Smoke commands: `obsidian vault="Test" plugin:reload id="obsidian-qmd"`, `obsidian vault="Test" command id="obsidian-qmd:open-search"`
 - Notes: `Search view and related notes view are primary runtime surfaces`
 
-### Skill Deploy
+### Agent Skill Deploy
 
 - Path: `obsidian-skill-deploy`
 - Repo kind: `root-local`
@@ -90,7 +90,7 @@
 - Release workflow: `ROOT_INTERNAL`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
 - Smoke commands: `pnpm --dir obsidian-skill-deploy run ci`
-- Notes: `Promotion to independent repo/submodule is pending`, `Must not be treated as a fully releasable portfolio member until promoted`
+- Notes: `Promotion to independent repo/submodule is pending`, `Target promoted identity: GoBeromsu/agent-skill-deploy`, `Must not be treated as a fully releasable portfolio member until promoted`
 
 ### Open Connections
 

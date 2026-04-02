@@ -129,7 +129,7 @@ The composition root (`main.ts`) passes real Obsidian objects which satisfy thes
 | `open-connections` | Semantic note connections via embeddings | `main` |
 | `Metadata-Auto-Classifier` | AI-powered metadata classification | `master` |
 | `obsidian-boiler-template` | Source-of-truth seed template | `master` |
-| `obsidian-bible-search` | Bible verse search (private) | `main` |
+| `obsidian-bible-search` | Bible verse search | `main` |
 | `obsidian-qmd` | QMD semantic search integration | `main` |
 | `youtube-note-playlist` | YouTube music player via yt-dlp | `main` |
 

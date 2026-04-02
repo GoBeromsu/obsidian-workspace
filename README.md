@@ -15,10 +15,11 @@ This repository is a **submodule workspace** and portfolio control plane, not a 
 | [obsidian-eagle-plugin](https://github.com/GoBeromsu/obsidian-eagle-plugin) | Upload and manage images via Eagle integration |
 | [Metadata-Auto-Classifier](https://github.com/GoBeromsu/Metadata-Auto-Classifier) | AI-powered automatic metadata generation for notes |
 | [open-connections](https://github.com/GoBeromsu/open-connections) | Semantic search and related notes using local embeddings |
-| `obsidian-bible-search` | Bible verse search plugin (private repository) |
+| [obsidian-bible-search](https://github.com/GoBeromsu/obsidian-bible-search) | Bible verse search plugin |
 | [obsidian-qmd](https://github.com/GoBeromsu/obsidian-qmd) | QMD semantic search integration |
 | [youtube-note-playlist](https://github.com/GoBeromsu/obsidian-note-player) | YouTube music player via yt-dlp |
 | [obsidian-boiler-template](https://github.com/GoBeromsu/obsidian-boiler-template) | Seed template for new plugins — fork this to start |
+| `obsidian-skill-deploy` | Root-local incubator plugin; promotion target is `agent-skill-deploy` |
 
 ## Control Plane
 
@@ -32,6 +33,8 @@ The root repo owns:
 - [generated workspace catalog](docs/workspace-catalog.md)
 
 The current root-level release gate is report-only. It validates portfolio metadata and emits a release readiness report without taking release authority away from child plugin repos.
+
+Known exception: `obsidian-skill-deploy` is still root-local because there is no standalone remote repository to attach as a submodule yet. The intended promoted identity is `agent-skill-deploy`.
 
 ## Quick Start
 
