@@ -1,0 +1,12 @@
+# Build output
+main.js
+*.js.map
+
+# npm
+node_modules/
+
+# Test results
+test-results.xml
+
+# Env
+.env
