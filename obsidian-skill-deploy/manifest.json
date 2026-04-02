@@ -1,0 +1,11 @@
+{
+	"id": "skill-deploy",
+	"name": "Skill Deploy",
+	"version": "0.1.0",
+	"minAppVersion": "0.15.0",
+	"description": "Deploy AI agent skills from your vault to remote GitHub repositories with per-provider frontmatter transformation.",
+	"author": "Beomsu Koh",
+	"authorUrl": "https://beromkoh.medium.com",
+	"fundingUrl": "buymeacoffee.com/gobeumsu9",
+	"isDesktopOnly": true
+}

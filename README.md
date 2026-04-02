@@ -8,7 +8,10 @@ My Obsidian plugin ecosystem. Each plugin lives as an independent repository, li
 |--------|-------------|
 | [obsidian-eagle-plugin](https://github.com/GoBeromsu/obsidian-eagle-plugin) | Upload and manage images via Eagle integration |
 | [Metadata-Auto-Classifier](https://github.com/GoBeromsu/Metadata-Auto-Classifier) | AI-powered automatic metadata generation for notes |
-| [Open-smart-connections](https://github.com/GoBeromsu/Open-smart-connections) | Semantic search and related notes using local embeddings |
+| [open-connections](https://github.com/GoBeromsu/open-connections) | Semantic search and related notes using local embeddings |
+| `obsidian-bible-search` | Bible verse search plugin (private repository) |
+| [obsidian-qmd](https://github.com/GoBeromsu/obsidian-qmd) | QMD semantic search integration |
+| [youtube-note-playlist](https://github.com/GoBeromsu/obsidian-note-player) | YouTube music player via yt-dlp |
 | [obsidian-boiler-template](https://github.com/GoBeromsu/obsidian-boiler-template) | Seed template for new plugins — fork this to start |
 
 ## Quick Start
@@ -36,6 +39,43 @@ pnpm test     # Vitest
 pnpm lint     # ESLint
 pnpm run ci   # build + lint + test
 ```
+
+## OMX
+
+This workspace currently standardizes on **user-scoped OMX**.
+
+- Active OMX config: `~/.codex/config.toml`
+- User OMX orchestration contract: `~/.codex/AGENTS.md`
+- Project-specific guidance: `./AGENTS.md`
+- Persisted scope marker: `./.omx/setup-scope.json`
+- Repo-local `./.codex/config.toml` is not authoritative unless setup is intentionally switched to `--scope project`
+
+### Daily workflow
+
+```bash
+# launch Codex with OMX wiring
+omx --madmax --high
+
+# common in-session workflow surfaces
+$deep-interview "clarify the task"
+$ralplan "approve the implementation plan"
+$team 3:executor "execute the approved plan in parallel"
+$ralph "carry the approved plan to completion"
+```
+
+### Operator commands
+
+```bash
+omx setup --force --verbose
+omx doctor
+omx status
+omx resume
+omx cleanup
+omx explore --prompt "find where team state is written"
+omx sparkshell git status --short
+```
+
+`omx sparkshell` takes the command directly. Use `omx sparkshell git status`, not `omx sparkshell -- git status`.
 
 
 ## Contributing
