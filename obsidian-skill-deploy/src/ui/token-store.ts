@@ -19,23 +19,23 @@ export class FileSystemTokenStore implements TokenStore {
 	}
 
 	async save(tokens: StoredTokens): Promise<void> {
-		// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef -- fs must be loaded via require() in Obsidian's Node context
-		const fs = require('fs') as {
-			mkdirSync: (path: string, opts: { recursive: boolean }) => void;
-			writeFileSync: (path: string, data: string, opts: { mode: number }) => void;
+		// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef -- fs/promises must be loaded via require() in Obsidian's Node context
+		const fs = require('fs/promises') as {
+			mkdir: (path: string, opts: { recursive: boolean }) => Promise<void>;
+			writeFile: (path: string, data: string, opts: { mode: number }) => Promise<void>;
 		};
-		fs.mkdirSync(this.configDir, { recursive: true });
-		fs.writeFileSync(this.tokenPath, JSON.stringify(tokens, null, 2), { mode: 0o600 });
+		await fs.mkdir(this.configDir, { recursive: true });
+		await fs.writeFile(this.tokenPath, JSON.stringify(tokens, null, 2), { mode: 0o600 });
 		this.logger.debug('Tokens saved');
 	}
 
 	async load(): Promise<StoredTokens | null> {
-		// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef -- fs must be loaded via require() in Obsidian's Node context
-		const fs = require('fs') as {
-			readFileSync: (path: string, encoding: string) => string;
+		// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef -- fs/promises must be loaded via require() in Obsidian's Node context
+		const fs = require('fs/promises') as {
+			readFile: (path: string, encoding: string) => Promise<string>;
 		};
 		try {
-			const data = fs.readFileSync(this.tokenPath, 'utf-8');
+			const data = await fs.readFile(this.tokenPath, 'utf-8');
 			this.logger.debug('Tokens loaded');
 			return JSON.parse(data) as StoredTokens;
 		} catch {
@@ -44,12 +44,12 @@ export class FileSystemTokenStore implements TokenStore {
 	}
 
 	async clear(): Promise<void> {
-		// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef -- fs must be loaded via require() in Obsidian's Node context
-		const fs = require('fs') as {
-			unlinkSync: (path: string) => void;
+		// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef -- fs/promises must be loaded via require() in Obsidian's Node context
+		const fs = require('fs/promises') as {
+			unlink: (path: string) => Promise<void>;
 		};
 		try {
-			fs.unlinkSync(this.tokenPath);
+			await fs.unlink(this.tokenPath);
 			this.logger.debug('Tokens cleared');
 		} catch {
 			// File doesn't exist — that's fine
