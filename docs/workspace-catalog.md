@@ -14,7 +14,7 @@
 | Boiler Template | `obsidian-boiler-template` | `template` | `stable` | `master` | `high` | `Test` |
 | Eagle Plugin | `obsidian-eagle-plugin` | `plugin` | `stable` | `main` | `high` | `Test` |
 | QMD | `obsidian-qmd` | `plugin` | `stable` | `main` | `high` | `Test` |
-| Agent Skill Deploy | `obsidian-skill-deploy` | `plugin` | `incubator` | `main` | `medium` | `Test` |
+| Agent Skill Deploy | `agent-skill-deploy` | `plugin` | `incubator` | `main` | `medium` | `Test` |
 | Open Connections | `open-connections` | `plugin` | `stable` | `main` | `critical` | `Test` |
 | Note Player | `youtube-note-playlist` | `plugin` | `stable` | `main` | `high` | `Ataraxia` |
 
@@ -82,15 +82,15 @@
 
 ### Agent Skill Deploy
 
-- Path: `obsidian-skill-deploy`
-- Repo kind: `root-local`
+- Path: `agent-skill-deploy`
+- Repo kind: `submodule`
 - Plugin id: `skill-deploy`
 - Release kind: `incubator`
-- CI workflow: `ROOT_INTERNAL`
-- Release workflow: `ROOT_INTERNAL`
+- CI workflow: `CI`
+- Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
-- Smoke commands: `pnpm --dir obsidian-skill-deploy run ci`
-- Notes: `Promotion to independent repo/submodule is pending`, `Target promoted identity: GoBeromsu/agent-skill-deploy`, `Must not be treated as a fully releasable portfolio member until promoted`
+- Smoke commands: `pnpm --dir agent-skill-deploy run ci`
+- Notes: `Promoted from root-local incubator into its own public repo`, `Keep release_kind=incubator until release and smoke contracts are fully aligned`
 
 ### Open Connections
 

@@ -19,7 +19,7 @@ This repository is a **submodule workspace** and portfolio control plane, not a 
 | [obsidian-qmd](https://github.com/GoBeromsu/obsidian-qmd) | QMD semantic search integration |
 | [youtube-note-playlist](https://github.com/GoBeromsu/obsidian-note-player) | YouTube music player via yt-dlp |
 | [obsidian-boiler-template](https://github.com/GoBeromsu/obsidian-boiler-template) | Seed template for new plugins — fork this to start |
-| `obsidian-skill-deploy` | Root-local incubator plugin; promotion target is `agent-skill-deploy` |
+| [agent-skill-deploy](https://github.com/GoBeromsu/agent-skill-deploy) | Deploy agent skills from a vault to provider repos |
 
 ## Control Plane
 
@@ -34,7 +34,7 @@ The root repo owns:
 
 The current root-level release gate is report-only. It validates portfolio metadata and emits a release readiness report without taking release authority away from child plugin repos.
 
-Known exception: `obsidian-skill-deploy` is still root-local because there is no standalone remote repository to attach as a submodule yet. The intended promoted identity is `agent-skill-deploy`.
+The former root-local `obsidian-skill-deploy` incubator has been promoted into the independent [agent-skill-deploy](https://github.com/GoBeromsu/agent-skill-deploy) submodule.
 
 ## Quick Start
 

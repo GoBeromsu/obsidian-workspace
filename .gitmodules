@@ -19,3 +19,7 @@
 [submodule "youtube-note-playlist"]
 	path = youtube-note-playlist
 	url = https://github.com/GoBeromsu/obsidian-note-player.git
+[submodule "agent-skill-deploy"]
+	path = agent-skill-deploy
+	url = https://github.com/GoBeromsu/agent-skill-deploy.git
+	branch = main

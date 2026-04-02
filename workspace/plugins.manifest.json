@@ -141,9 +141,9 @@
     },
     {
       "name": "Agent Skill Deploy",
-      "repo_path": "obsidian-skill-deploy",
-      "repo_kind": "root-local",
-      "repo_slug": null,
+      "repo_path": "agent-skill-deploy",
+      "repo_kind": "submodule",
+      "repo_slug": "GoBeromsu/agent-skill-deploy",
       "git_branch": "main",
       "plugin_id": "skill-deploy",
       "portfolio_role": "plugin",
@@ -154,17 +154,16 @@
         "styles.css",
         "versions.json"
       ],
-      "ci_workflow": "ROOT_INTERNAL",
-      "release_workflow": "ROOT_INTERNAL",
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
       "smoke_vault": "Test",
       "smoke_commands": [
-        "pnpm --dir obsidian-skill-deploy run ci"
+        "pnpm --dir agent-skill-deploy run ci"
       ],
       "risk_tier": "medium",
       "notes": [
-        "Promotion to independent repo/submodule is pending",
-        "Target promoted identity: GoBeromsu/agent-skill-deploy",
-        "Must not be treated as a fully releasable portfolio member until promoted"
+        "Promoted from root-local incubator into its own public repo",
+        "Keep release_kind=incubator until release and smoke contracts are fully aligned"
       ]
     },
     {

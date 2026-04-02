@@ -9,7 +9,7 @@
 - Each production plugin lives in its own git repository.
 - The root repository coordinates portfolio state, shared contracts, and release readiness.
 - `obsidian-boiler-template` is the source of truth for deterministic shared code, lint/workflow contracts, and scaffolding.
-- `obsidian-skill-deploy` is currently a root-local incubator and should be promoted to an independent repo/submodule under the target identity `agent-skill-deploy`.
+- `agent-skill-deploy` is now an independent submodule member. The old root-local `obsidian-skill-deploy` exception is retired.
 
 ## Topology
 
@@ -18,7 +18,7 @@
 | Root control plane | Portfolio visibility, docs, release readiness, submodule pointers | `README.md`, `workspace/plugins.manifest.json`, root workflows |
 | Template platform | Shared deterministic code and generated contracts | `obsidian-boiler-template/` |
 | Plugin repos | Independent implementation and release authority | `open-connections/`, `obsidian-qmd/`, `obsidian-eagle-plugin/` |
-| Incubators | Root-local experiments that are not yet first-class release members | `obsidian-skill-deploy/` |
+| Incubators | Experimental plugins not yet treated as stable portfolio members | `agent-skill-deploy/` |
 
 ## Source Of Truth Boundaries
 
@@ -53,12 +53,12 @@ The root control plane should **not**:
 
 ## Promotion Path
 
-`obsidian-skill-deploy` is the only root-local releaseable plugin-shaped directory today. It should move through this lifecycle:
+`agent-skill-deploy` has already completed the repo promotion step and now remains incubator-classified until its release and smoke contracts are fully aligned.
 
-1. Incubator inside root
-2. Independent repo as `agent-skill-deploy` with the same contract as other plugins
+1. Root-local incubator
+2. Independent repo as `agent-skill-deploy`
 3. Added to `.gitmodules` and `workspace/plugins.manifest.json`
-4. Included in the same CI/release/smoke policy as other plugins
+4. Graduated from incubator once CI/release/smoke contracts match stable plugins
 
 ## See Also
 
