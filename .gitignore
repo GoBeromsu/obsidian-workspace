@@ -1,4 +1,5 @@
 # Personal notes — never commit
+notes
 notes/
 
 # Local env (contains personal vault paths)
@@ -7,5 +8,14 @@ notes/
 # macOS
 .DS_Store
 
-# Codex AI scratch dir
+# Local agent/runtime state
+.agents/
 .codex/
+.omc/
+.omx/
+.claude/agent-memory/
+.claude/*.local.md
+
+# Python cache
+__pycache__/
+*.pyc
