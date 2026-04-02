@@ -7,6 +7,9 @@
 [submodule "Metadata-Auto-Classifier"]
 	path = Metadata-Auto-Classifier
 	url = https://github.com/GoBeromsu/Metadata-Auto-Classifier.git
+[submodule "obsidian-bible-search"]
+	path = obsidian-bible-search
+	url = https://github.com/GoBeromsu/obsidian-bible-search.git
 [submodule "obsidian-qmd"]
 	path = obsidian-qmd
 	url = https://github.com/GoBeromsu/obsidian-qmd.git
