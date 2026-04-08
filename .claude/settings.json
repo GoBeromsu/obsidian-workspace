@@ -26,5 +26,19 @@
     "feature-dev@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true
   },
-  "hooks": {}
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-edit-guard.sh",
+            "timeout": 60,
+            "statusMessage": "Running lint + test guard"
+          }
+        ]
+      }
+    ]
+  }
 }

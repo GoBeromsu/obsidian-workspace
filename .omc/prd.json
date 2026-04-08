@@ -1,74 +1,102 @@
 {
-  "project": "obsidian-community-bot-review-fixes",
+  "project": "bible-search-fetch-resilience",
   "stories": [
     {
       "id": "US-001",
-      "title": "Fix QMD (obsidian-qmd) bot review issues",
+      "title": "resilient-fetch.ts 모듈 생성",
       "acceptanceCriteria": [
-        "Command names have no 'QMD:' prefix (e.g. 'Open search' not 'QMD: Open search')",
-        "UI text uses sentence case in settings-tab.ts, related-view.ts, search-modal.ts",
-        "onClose in related-view.ts is not async (no await inside)",
-        "submitCurrentQuery in search-modal.ts is not async (no await inside)",
-        "settings-tab.ts uses new Setting().setHeading() instead of direct HTML heading elements",
-        "Unnecessary type assertion removed from query-builder.ts",
-        "Object stringification fixed in parser.ts (String() cast for unknown fields)",
-        "pnpm ci passes in obsidian-qmd directory",
-        "Changes committed and pushed to main branch of obsidian-qmd"
+        "src/utils/resilient-fetch.ts 파일이 존재한다",
+        "resilientFetch 함수가 FetchFn을 DI로 받는다 (Obsidian import 없음)",
+        "FetchResponse 인터페이스: { status: number; text: string; json: unknown }",
+        "timeout 기본값 10000ms, Promise.race로 구현",
+        "exponential backoff 재시도: 기본 maxRetries=3, backoffBase=1000ms",
+        "5xx/네트워크에러 → 재시도, 4xx → 즉시 실패",
+        "throw: false 내부 사용, response.status 기반 판별",
+        "validateResponse 콜백 실패 시 Error throw",
+        "커스텀 headers 전달 지원"
       ],
       "passes": true,
-      "evidence": "commit 55c73f1 pushed to obsidian-qmd main"
+      "evidence": "File exists, 7 unit tests pass, no obsidian imports"
     },
     {
       "id": "US-002",
-      "title": "Fix Note Player (youtube-note-playlist) bot review issues",
+      "title": "resilient-fetch 단위 테스트",
       "acceptanceCriteria": [
-        "audio-cache.ts uses this.app.vault.configDir instead of hardcoded .obsidian",
-        "UI text uses sentence case in main.ts, settings.ts, NotePlayerView.ts, download-status-bar.ts",
-        "Command name in main.ts has no plugin name prefix",
-        "Unnecessary async removed from playTrack, playPrevious, playNext, getAvailablePlaylistPath, onOpen, onClose, play, pause",
-        "Unhandled promises at main.ts use void operator",
-        "settings.ts uses new Setting().setHeading() instead of direct HTML headings",
-        "Inline styles replaced with CSS classes or setCssProps",
-        "pnpm ci passes in youtube-note-playlist directory",
-        "Changes committed and pushed to main branch"
+        "test/resilient-fetch.test.ts 파일이 존재한다",
+        "정상 응답 시 FetchResponse 반환 테스트 통과",
+        "timeout 초과 시 에러 throw 테스트 통과",
+        "2회 실패 + 3회째 성공 시 정상 반환 테스트 통과",
+        "maxRetries 초과 시 마지막 에러 throw 테스트 통과",
+        "4xx 에러 시 재시도 없이 즉시 실패 테스트 통과",
+        "validateResponse 실패 시 에러 throw 테스트 통과",
+        "커스텀 헤더 전달 확인 테스트 통과"
       ],
       "passes": true,
-      "evidence": "v0.7.6 released: audio-cache configDir required param (no .obsidian default), plugin-notices stringification fixed. Bot rescan pending."
+      "evidence": "7/7 tests pass in test/resilient-fetch.test.ts"
     },
     {
       "id": "US-003",
-      "title": "Fix Open Connections (open-connections) bot review issues",
+      "title": "BSKorea scraper에 resilientFetch 적용",
       "acceptanceCriteria": [
-        "Object stringification fixed in all flagged domain files",
-        "All other Required items from ObsidianReviewBot comment addressed",
-        "pnpm ci passes in open-connections directory",
-        "Changes committed and pushed to main branch"
+        "bskorea-scraper.ts가 resilientFetch를 import하여 사용한다",
+        "requestUrl을 fetchFn으로 DI 주입한다",
+        "User-Agent 헤더에 브라우저 UA 문자열이 포함된다",
+        "Referer: https://www.bskorea.or.kr/ 헤더가 포함된다",
+        "validateResponse가 response.text에 tdBible1 포함 여부를 확인한다",
+        "parseVerses에서 #tdBible1 없을 시 Error throw (빈 배열 대신)",
+        "기존 bskorea-scraper.test.ts 7개 테스트 통과"
       ],
       "passes": true,
-      "evidence": "v3.9.19 released: removed bare console calls in domain files. Bot rescan pending."
+      "evidence": "resilientFetch imported, DI constructor, UA/Referer headers, validateResponse with tdBible1, throw on missing container. 7/7 existing tests pass."
     },
     {
       "id": "US-004",
-      "title": "Fix community PRs - template, entry position, and Eagle release",
+      "title": "Bolls API에 resilientFetch 적용",
       "acceptanceCriteria": [
-        "Eagle PR #11376: GitHub release for 2.8.7 exists or triggered via pnpm release:patch",
-        "Open Connections PR #11359: updated with correct PR template, entry at end",
-        "Note Player PR #11358: updated with correct PR template, entry at end",
-        "All 3 PRs re-triggered for bot validation"
+        "bolls-api.ts가 resilientFetch를 import하여 사용한다",
+        "requestUrl을 fetchFn으로 DI 주입한다",
+        "validateResponse가 JSON 배열이고 verse 필드 포함 확인한다",
+        "기존 bolls-api.test.ts 7개 테스트 통과"
       ],
       "passes": true,
-      "evidence": "Eagle #11376 already had Ready for review label. #11358 and #11359 fork branches resynced, plugin-validation: pass on all 3 PRs. ObsidianReviewBot rescan pending (within 6 hours) after code fix pushes."
+      "evidence": "resilientFetch imported, DI constructor, validateResponse checks Array.isArray + verse field. 7/7 existing tests pass."
     },
     {
       "id": "US-005",
-      "title": "Enhance /obsidian-publish skill with bot-review checklist",
+      "title": "캐시 빈 배열 방어 및 Notice 추가",
       "acceptanceCriteria": [
-        "obsidian-publish skill updated with pre-submission code quality checklist",
-        "Checklist covers: command naming, sentence case, async methods, heading API, inline styles, object stringification, configDir usage",
-        "Checklist is actionable and prevents repeat bot rejections"
+        "fetch-chapter-verses.ts에서 verses.length > 0일 때만 cache.set 호출",
+        "main.ts NOTICE_CATALOG에 fetch_timeout 항목이 추가됨",
+        "fetch_timeout template에 source와 seconds 변수 포함"
       ],
       "passes": true,
-      "evidence": "Added Pre-Submission Code Quality Checklist section + ObsidianReviewBot troubleshooting table to .claude/skills/obsidian-publish/SKILL.md"
+      "evidence": "cache.set guarded with verses.length > 0, fetch_timeout notice added with source/seconds template vars"
+    },
+    {
+      "id": "US-006",
+      "title": "라이브 URL 통합 테스트",
+      "acceptanceCriteria": [
+        "test/integration/live-fetch.test.ts 파일이 존재한다",
+        "process.env.CI일 때 테스트가 skip된다",
+        "BSKorea GAE genesis 1: HTTP 200, 구절 1개 이상",
+        "BSKorea HAN genesis 1: HTTP 200, 구절 1개 이상",
+        "Bolls ESV john 3: HTTP 200, JSON 배열, verse 필드",
+        "Bolls KJV john 3: HTTP 200, JSON 배열, verse 필드"
+      ],
+      "passes": true,
+      "evidence": "4/4 live tests pass (BSKorea GAE+HAN, Bolls ESV+KJV). describe.skipIf(isCI) in place."
+    },
+    {
+      "id": "US-007",
+      "title": "전체 검증 (build + lint + test)",
+      "acceptanceCriteria": [
+        "pnpm build 타입 에러 없이 성공",
+        "pnpm lint 에러 없이 통과",
+        "pnpm test 전체 통과 (기존 161개 + 신규 테스트)",
+        "라이브 통합 테스트 통과 (로컬)"
+      ],
+      "passes": true,
+      "evidence": "build: pass, lint: pass, test: 172/172 pass (13 files)"
     }
   ]
 }
