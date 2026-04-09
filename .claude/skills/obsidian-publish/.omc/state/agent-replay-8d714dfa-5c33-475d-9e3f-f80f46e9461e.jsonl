@@ -1,4 +1,0 @@
-{"t":0,"agent":"a4d64b5","agent_type":"explore","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"a4d64b5","agent_type":"explore","event":"agent_stop","success":true,"duration_ms":26411}
-{"t":0,"agent":"system","event":"skill_invoked","skill_name":"oh-my-claudecode:team"}
-{"t":0,"agent":"a372dc9","agent_type":"unknown","event":"agent_stop","success":true}

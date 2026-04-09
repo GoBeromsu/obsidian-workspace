@@ -13,8 +13,11 @@ notes/
 .codex/
 .omc/
 .omx/
+.openchrome/
 .claude/agent-memory/
 .claude/*.local.md
+.claude/**/.omc/
+.claude/**/.openchrome/
 
 # Python cache
 __pycache__/
