@@ -147,6 +147,8 @@ All plugin UI must use Obsidian's built-in components and CSS variables exclusiv
 
 **Why**: Obsidian plugins must respect user themes (light, dark, custom). Hardcoded colors and raw HTML break theme compatibility and produce inconsistent UX across the plugin ecosystem.
 
+**Extended vocabulary**: See [design-system/README.md](design-system/README.md) for the canonical token set, component classes (`.plugin-*`), iconography (`design-system/assets/ICONOGRAPHY.md`), UX principles (`design-system/UX_PRINCIPLES.md`), and content/tone rules that extend this rule. When a UI decision is ambiguous, resolve it there before inventing a new pattern.
+
 Check for violations:
 
 ```bash

@@ -31,6 +31,7 @@ The root repo owns:
 - [release architecture](docs/release-architecture.md)
 - [release note contract](docs/release-note-contract.md)
 - [generated workspace catalog](docs/workspace-catalog.md)
+- [design system](docs/design-system/README.md)
 
 The current root-level release gate is report-only. It validates portfolio metadata and emits a release readiness report without taking release authority away from child plugin repos.
 

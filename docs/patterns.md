@@ -304,6 +304,7 @@ Find all uses: `rg "ProcessAdapter\|resolveExecutablePath" */src/`
 - [Architecture](architecture.md) — Layer structure, dependency rules
 - [Exploration Guide](exploration-guide.md) — Study paths, grep patterns, feature→file mapping
 - [Rules](rules.md) — Code enforcement (SRP, LOC limits, no catch-alls)
+- [Design System](design-system/README.md) — Visual/UX standard, tokens, component classes, iconography
 - [Gotchas](gotchas.md) — Known pitfalls and edge cases
 - [Obsidian API](obsidian-api.md) — API quirks and workarounds
 - [Collaboration](collaboration.md) — Agent roles and handoff protocol
