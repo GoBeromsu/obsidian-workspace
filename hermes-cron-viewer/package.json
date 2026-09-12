@@ -1,0 +1,19 @@
+{
+  "name": "hermes-cron-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only Obsidian viewer for remote Hermes cron schedules and execution evidence.",
+  "type": "module",
+  "scripts": {
+    "build": "bun run esbuild.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "@types/node": "^22.10.2",
+    "esbuild": "^0.24.2",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.7.2"
+  }
+}

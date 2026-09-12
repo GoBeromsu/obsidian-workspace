@@ -1,0 +1,9 @@
+{
+  "id": "hermes-cron-viewer",
+  "name": "Hermes",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Cron schedule viewer and profile document editor for remote Hermes hosts over existing SSH aliases.",
+  "author": "beomsu",
+  "isDesktopOnly": true
+}
