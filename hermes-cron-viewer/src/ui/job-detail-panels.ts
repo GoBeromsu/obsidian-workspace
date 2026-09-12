@@ -2,6 +2,7 @@ import { setIcon } from "obsidian";
 import type { CronJobRecord } from "../types/hermes-cron";
 import type { JobTabId } from "../types/view";
 import { jobStatusView } from "../domain/run-status-view-model";
+import { formatOverviewInstant } from "../domain/overview-instant";
 import { renderStateIndicator } from "./transport-source-badge";
 import { renderVerbatimLine } from "./run-output-viewer";
 
@@ -107,15 +108,13 @@ export function renderOverviewPanel(panel: HTMLElement, job: CronJobRecord): voi
 
   const list = panel.createEl("dl", { cls: "hcv-facts" });
   fact(list, "Schedule", job.schedule.display ?? job.schedule.raw ?? "no schedule text");
-  fact(list, "Next run", job.nextRunAt ?? "not stated");
-  fact(list, "Last run", job.lastRunAt ?? "no last run time");
+  timeFact(list, "Next run", job.nextRunAt, "Not stated");
+  timeFact(list, "Last run", job.lastRunAt, "No last run");
   const dispatch = job.lastDispatch;
   if (dispatch !== null) {
-    fact(
-      list,
-      `Dispatch ${dispatch.kind ?? "?"}`,
-      `scheduled ${dispatch.scheduledAt ?? "?"}, ran ${dispatch.dispatchedAt ?? "?"}`,
-    );
+    if (dispatch.kind !== null) fact(list, "Dispatch", dispatch.kind);
+    timeFact(list, "Dispatch scheduled", dispatch.scheduledAt, "Not stated");
+    timeFact(list, "Dispatch ran", dispatch.dispatchedAt, "Not stated");
   }
 
   renderNativeBody(panel, "Prompt", job.prompt);
@@ -127,6 +126,29 @@ export function renderOverviewPanel(panel: HTMLElement, job: CronJobRecord): voi
 function fact(list: HTMLElement, label: string, value: string): void {
   list.createEl("dt", { cls: "hcv-fact-label", text: label });
   list.createEl("dd", { cls: "hcv-fact-value", text: value });
+}
+
+/**
+ * A timestamp fact: a prominent local clock over a muted date/timezone line.
+ *
+ * A value without an explicit offset is never placed on a clock; it is shown as stored with
+ * `Time zone unknown`. The exact stored text is always carried in the `title`.
+ */
+function timeFact(
+  list: HTMLElement,
+  label: string,
+  raw: string | null,
+  unavailable: string,
+): void {
+  const shown = formatOverviewInstant(raw, { unavailable });
+  list.createEl("dt", { cls: "hcv-fact-label", text: label });
+  const value = list.createEl("dd", { cls: "hcv-fact-value hcv-fact-time", attr: { title: shown.title } });
+  if (shown.clock !== null) {
+    value.createSpan({ cls: "hcv-fact-clock", text: shown.clock });
+  } else if (shown.raw !== null) {
+    value.createSpan({ cls: "hcv-fact-raw", text: shown.raw });
+  }
+  value.createSpan({ cls: "hcv-fact-context", text: shown.context });
 }
 
 /**

@@ -136,6 +136,18 @@
 
 /* Today axis */
 
+.hcv-day-header {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+
+.hcv-stale-cache {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-warning);
+}
+
 .hcv-day-title {
   margin: var(--size-4-2) 0;
   color: var(--text-normal);
@@ -229,6 +241,61 @@
 
 .hcv-entry > .hcv-entry-origin {
   grid-column: 3;
+}
+
+/* Current time marker: rendered inside the hour cell it belongs to, never absolutely placed. */
+
+.hcv-hour-past .hcv-hour-label {
+  opacity: 0.6;
+}
+
+.hcv-hour-now .hcv-hour-label {
+  color: var(--text-accent);
+  font-weight: var(--font-semibold);
+}
+
+.hcv-now {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  padding: 0 var(--size-2-2);
+  border-top: 2px solid var(--text-accent);
+}
+
+.hcv-now-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: -1px;
+  border-radius: 50%;
+  background-color: var(--text-accent);
+}
+
+.hcv-now-time {
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
+.hcv-entry-past {
+  opacity: 0.6;
+}
+
+.hcv-entry-next {
+  border-left-color: var(--text-accent);
+  background-color: var(--background-modifier-hover);
+}
+
+.hcv-entry-next-badge {
+  display: none;
+}
+
+.hcv-entry-next > .hcv-entry-next-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  grid-column: 1 / 4;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
 }
 
 /* Week calendar: hour gutter on the left, seven day columns to the right. */
@@ -749,6 +816,35 @@
   overflow-wrap: anywhere;
 }
 
+/* Timestamp facts: the clock reads first, the date and zone stay secondary. */
+.hcv-fact-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--size-2-2);
+}
+
+.hcv-fact-clock {
+  color: var(--text-normal);
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  line-height: 1.2;
+}
+
+.hcv-fact-raw {
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+}
+
+.hcv-fact-context {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
 .hcv-evidence-head {
   display: flex;
   flex-wrap: wrap;
@@ -894,4 +990,82 @@
   justify-content: flex-end;
   gap: var(--size-2-2);
   margin-top: var(--size-4-2);
+}
+
+/* Output reader: one compact toolbar over one full-width body. */
+
+.hcv-reader-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  min-width: 0;
+  margin-bottom: var(--size-4-2);
+  padding-bottom: var(--size-2-2);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.hcv-reader-action {
+  flex: 0 0 auto;
+  flex-direction: row-reverse;
+  gap: var(--size-2-1);
+  padding: var(--size-2-1) var(--size-2-2);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+}
+
+.hcv-reader-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.hcv-reader-icon > svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+.hcv-reader-file {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: var(--size-2-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+}
+
+.hcv-reader-bar ~ .hcv-verbatim {
+  width: 100%;
+  max-height: min(32rem, 60vh);
+}
+
+.hcv-reader-bar ~ .hcv-evidence-empty {
+  margin: 0 0 var(--size-2-2) 0;
+}
+
+/* Unavailable evidence: a short heading over its own note, never a second column. */
+
+.hcv-evidence-unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+  min-width: 0;
+}
+
+.hcv-evidence-heading {
+  margin: 0;
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+}
+
+.hcv-evidence-unavailable > .hcv-evidence-empty {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.hcv-evidence-unavailable > .hcv-disclosure {
+  margin-top: var(--size-2-2);
 }

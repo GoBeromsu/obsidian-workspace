@@ -20,10 +20,7 @@ export function renderLedgerPanel(
   pageError: string | null,
 ): void {
   if (ledger.status !== "read") {
-    parent.createEl("p", {
-      cls: "hcv-evidence-empty",
-      text: `${SOURCE_LABEL[ledger.status]}: ${ledger.detail ?? "no information"}`,
-    });
+    renderLedgerUnavailable(parent, ledger);
     return;
   }
 
@@ -56,6 +53,29 @@ export function renderLedgerPanel(
   }
 }
 
+/**
+ * A history read that did not succeed.
+ *
+ * The short sentence says only what is observable: this read failed and the other evidence is
+ * unaffected. It never claims the history is missing, corrupted or a WAL problem, because a
+ * failing read alone does not establish a cause. The exact native message stays available, byte
+ * for byte, behind a native disclosure instead of a wall of raw error text.
+ */
+function renderLedgerUnavailable(parent: HTMLElement, ledger: LedgerReadResult): void {
+  const block = parent.createDiv({ cls: "hcv-evidence-unavailable" });
+  block.createEl("h4", { cls: "hcv-evidence-heading", text: SOURCE_LABEL[ledger.status] });
+  block.createEl("p", {
+    cls: "hcv-evidence-empty",
+    text: "The execution log could not be read. Schedules and output files are still available.",
+  });
+  const detail = ledger.detail;
+  if (detail === null || detail.trim() === "") return;
+  const details = block.createEl("details", { cls: "hcv-disclosure" });
+  details.createEl("summary", { cls: "hcv-disclosure-summary", text: "Technical details" });
+  // `text` sets a text node: the native message is shown exactly, never reworded.
+  details.createEl("pre", { cls: "hcv-verbatim", text: detail });
+}
+
 function renderLedgerRow(item: HTMLElement, row: ExecutionRow): void {
   const view = executionStatusView(row);
   const head = item.createDiv({ cls: "hcv-evidence-head" });
@@ -77,22 +97,28 @@ function renderLedgerRow(item: HTMLElement, row: ExecutionRow): void {
   }
 }
 
-/** Render only the output file selector, in the existing index order, never paired to a row. */
+/**
+ * Render only the output file selector, in the existing index order, never paired to a row.
+ *
+ * Returns the list element so the caller can keep the reading position across a reader visit.
+ */
 export function renderOutputPanel(
   parent: HTMLElement,
   outputs: OutputFileIndex,
   onSelect: (fileName: string) => void,
   outputError: string | null,
-): void {
+): HTMLElement | null {
   if (outputError !== null) {
     // A failed listing is reported as a failure, never as "there are no files".
     parent.createEl("p", { cls: "hcv-evidence-empty", text: `Could not list output files: ${outputError}` });
-    return;
+    return null;
   }
+  let listEl: HTMLElement | null = null;
   if (outputs.files.length === 0) {
     parent.createEl("p", { cls: "hcv-evidence-empty", text: "No output files listed." });
   } else {
     const list = parent.createEl("ul", { cls: "hcv-evidence-list" });
+    listEl = list;
     for (const file of outputs.files) {
       const item = list.createEl("li", { cls: "hcv-evidence-item" });
       const button = item.createEl("button", { cls: "hcv-output-button", text: file.fileName });
@@ -106,4 +132,5 @@ export function renderOutputPanel(
       text: `${outputs.rejectedCount} file name(s) outside the supported name format are not shown.`,
     });
   }
+  return listEl;
 }

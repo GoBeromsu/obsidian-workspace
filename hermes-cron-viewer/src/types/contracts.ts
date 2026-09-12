@@ -61,6 +61,26 @@ export type ResolvedInstant =
   /** Not a timestamp this build understands: displayed verbatim. */
   | { readonly kind: "unparsed"; readonly raw: string };
 
+/** Presentation options for one overview timestamp. `timeZone` is an IANA zone, default local. */
+export interface OverviewInstantOptions {
+  readonly timeZone?: string;
+  readonly unavailable?: string;
+}
+
+/** One overview timestamp, split into a prominent clock and a secondary context line. */
+export interface OverviewInstant {
+  /** `absolute`: placed in local time. `verbatim`: shown as stored. `unavailable`: nothing stored. */
+  readonly kind: "absolute" | "verbatim" | "unavailable";
+  /** `HH:mm`, only when the absolute instant is known. */
+  readonly clock: string | null;
+  /** Date and timezone, or the reason no clock is shown. */
+  readonly context: string;
+  /** The exact stored text, unmodified. */
+  readonly raw: string | null;
+  /** Hover/accessible text carrying the exact stored text. */
+  readonly title: string;
+}
+
 /** Local-time parts used for calendar placement. */
 export interface LocalParts {
   readonly year: number;

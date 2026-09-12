@@ -1,15 +1,14 @@
-import { ItemView, type WorkspaceLeaf } from "obsidian";
+import { ItemView, setIcon, type WorkspaceLeaf } from "obsidian";
 import type { CronJobRecord } from "../types/hermes-cron";
 import { JobDetailModal } from "./job-detail-modal";
 import { buildTodayColumn } from "../domain/week-grid-builder";
-import { groupSourceStatuses } from "../domain/source-status-groups";
-import type { PlacedEntry } from "../types/view";
+import type { PlacedEntry, TimelineNowHost } from "../types/view";
 import { renderFilterBar } from "./filter-bar";
-import { renderStaleBanner } from "./stale-banner";
-import { renderStatusBadges } from "./transport-source-badge";
+import { freshnessLabel, renderStaleCacheIcon } from "./stale-cache-indicator";
 import { renderUnplacedPanel } from "./unplaced-instants-panel";
 import type { ViewerState } from "./viewer-state";
 import { NOTICES } from "./notices";
+import { TimelineNowMarker } from "./timeline-now-marker";
 
 export const TODAY_TIMELINE_VIEW = "hermes-cron-today-timeline";
 
@@ -28,6 +27,16 @@ function makeActivatable(el: HTMLElement, action: () => void): void {
 /** Vertical axis for today, rendered from native-stated instants only. */
 export class TodayTimelineView extends ItemView {
   private unsubscribe: (() => void) | null = null;
+  /** The axis is scrolled to the current hour on the first open of this view only. */
+  private autoScrolled = false;
+  private readonly nowMarker = new TimelineNowMarker(
+    () => Date.now(),
+    {
+      setInterval: (handler, ms) => globalThis.setInterval(handler, ms) as unknown as number,
+      clearInterval: (handle) => globalThis.clearInterval(handle),
+    },
+    () => this.render(),
+  );
 
   constructor(leaf: WorkspaceLeaf, private readonly state: ViewerState) {
     super(leaf);
@@ -49,6 +58,7 @@ export class TodayTimelineView extends ItemView {
     this.unsubscribe = this.state.subscribe(() => this.render());
     this.state.scheduler?.viewOpened();
     this.render();
+    this.nowMarker.start();
   }
 
   private openDetail(job: CronJobRecord): void {
@@ -67,52 +77,61 @@ export class TodayTimelineView extends ItemView {
   override async onClose(): Promise<void> {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.nowMarker.stop();
     this.state.scheduler?.viewClosed();
   }
 
   private render(): void {
     const root = this.contentEl;
+    // A poll-driven re-render must not move the reader: keep whatever they had scrolled to.
+    const scrollTop = root.scrollTop;
     root.empty();
     root.addClass("hcv-root");
 
     renderFilterBar(root, this.state);
-    renderStaleBanner(root, this.state.freshnessEntries());
 
     const snapshots = this.state.filteredSnapshots();
     if (snapshots.length === 0) {
       root.createEl("p", { cls: "hcv-empty", text: NOTICES.noSelection });
+      this.nowMarker.release();
+      root.scrollTop = scrollTop;
       return;
     }
 
-    const statusList = root.createDiv({ cls: "hcv-source-list" });
-    for (const group of groupSourceStatuses(snapshots, (key) => this.state.ledgerOf(key))) {
-      const alias = statusList.createDiv({ cls: "hcv-source-alias" });
-      alias.createEl("h3", { cls: "hcv-source-alias-heading", text: group.alias });
-      for (const cluster of group.clusters) {
-        const item = alias.createDiv({ cls: "hcv-source" });
-        const profiles = item.createDiv({ cls: "hcv-source-profiles" });
-        for (const profileId of cluster.profileIds) {
-          profiles.createSpan({ cls: "hcv-source-profile", text: profileId });
-        }
-        renderStatusBadges(item, cluster.snapshot, cluster.ledger);
-      }
-    }
-
     const { column, unplaced } = buildTodayColumn(this.state.filteredJobs(), Date.now());
-    root.createEl("h3", { cls: "hcv-day-title", text: column.dayKey });
+    const header = root.createDiv({ cls: "hcv-day-header" });
+    header.createEl("h3", { cls: "hcv-day-title", text: column.dayKey });
+    const jump = header.createEl("button", {
+      cls: "hcv-doc-action hcv-jump-now",
+      attr: { type: "button", "aria-label": "Jump to now", title: "Jump to now" },
+    });
+    setIcon(jump, "crosshair");
+    jump.addEventListener("click", () => this.nowMarker.jumpToNow());
+    // Freshness hint only: cached content must never read as a live schedule.
+    renderStaleCacheIcon(
+      header,
+      this.state.freshnessEntries(),
+      new Set(snapshots.map((snapshot) => freshnessLabel(snapshot.source))),
+    );
 
     // Entries are rendered inside their own hour row, so position needs no runtime style.
     const axis = root.createDiv({ cls: "hcv-axis" });
+    const rows: HTMLElement[] = [];
     const slots: HTMLElement[] = [];
     for (let hour = 0; hour < 24; hour += 1) {
       const row = axis.createDiv({ cls: "hcv-hour" });
       row.createSpan({ cls: "hcv-hour-label", text: `${String(hour).padStart(2, "0")}:00` });
+      rows.push(row);
       slots.push(row.createDiv({ cls: "hcv-hour-slot" }));
     }
 
+    const entries: PlacedEntry[] = [];
+    const entryEls: HTMLElement[] = [];
     for (const entry of column.entries) {
       const slot = slots[Math.floor(entry.minutesOfDay / 60)];
-      if (slot !== undefined) this.renderEntry(slot, entry);
+      if (slot === undefined) continue;
+      entries.push(entry);
+      entryEls.push(this.renderEntry(slot, entry));
     }
 
     if (column.entries.length === 0) {
@@ -123,9 +142,24 @@ export class TodayTimelineView extends ItemView {
     }
 
     renderUnplacedPanel(root, unplaced);
+
+    const marker = root.createDiv({ cls: "hcv-now" });
+    marker.createSpan({ cls: "hcv-now-dot" });
+    const host: TimelineNowHost = {
+      dayKey: column.dayKey,
+      hourRows: rows,
+      hourSlots: slots,
+      entries,
+      entryEls,
+      marker: { root: marker, time: marker.createSpan({ cls: "hcv-now-time" }) },
+    };
+    const firstOpen = !this.autoScrolled;
+    this.autoScrolled = true;
+    this.nowMarker.mount(host, firstOpen);
+    if (!firstOpen) root.scrollTop = scrollTop;
   }
 
-  private renderEntry(parent: HTMLElement, entry: PlacedEntry): void {
+  private renderEntry(parent: HTMLElement, entry: PlacedEntry): HTMLElement {
     const block = parent.createDiv({ cls: `hcv-entry hcv-entry-${entry.origin}` });
     block.createSpan({ cls: "hcv-entry-time", text: entry.localClock });
     block.createSpan({ cls: "hcv-entry-name", text: entry.job.name ?? entry.job.id });
@@ -142,7 +176,12 @@ export class TodayTimelineView extends ItemView {
     } stated by Hermes; ${entry.job.source.alias}/${entry.job.source.profileId}`;
     block.setAttribute("aria-label", label);
     block.setAttribute("title", label);
+    const badge = block.createSpan({ cls: "hcv-entry-next-badge" });
+    setIcon(badge, "alarm-clock");
+    badge.createSpan({ cls: "hcv-entry-next-text", text: "Next scheduled run" });
+    badge.setAttribute("title", "Next scheduled run stated by Hermes");
     block.dataset.jobId = entry.job.id;
     makeActivatable(block, () => this.openDetail(entry.job));
+    return block;
   }
 }

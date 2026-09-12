@@ -1,14 +1,14 @@
 import { Modal, type App } from "obsidian";
 import type { CronJobRecord, OutputFileIndex, ProfileRef } from "../types/hermes-cron";
 import type { LedgerReadResult } from "../types/snapshot";
-import { buildListOutputFiles, buildReadOutputFile } from "../domain/read-command-builder";
+import { buildListOutputFiles } from "../domain/read-command-builder";
 import { buildOutputFileIndex } from "../domain/output-file-index";
 import { splitNulRecords } from "../domain/response-bound";
 import { readExecutionHistory } from "./execution-history-reader";
 import type { HistoryCursor, JobTabId } from "../types/view";
 import { renderLedgerPanel, renderOutputPanel } from "./job-evidence-panels";
 import { createJobPanel, renderJobTabs, renderOverviewPanel } from "./job-detail-panels";
-import { renderVerbatimBody } from "./run-output-viewer";
+import { OutputReaderState } from "./output-reader-panel";
 import type { SshReadOnlyAdapter } from "./ssh-read-only-adapter";
 import type { VerbatimMemoryStore } from "./verbatim-memory-store";
 
@@ -19,8 +19,9 @@ export class JobDetailModal extends Modal {
   private ledger: LedgerReadResult = { status: "read", detail: null, rows: [], windowLimited: false };
   private outputs: OutputFileIndex = EMPTY_INDEX;
   private outputError: string | null = null;
-  private selectedOutput: string | null = null;
-  private bodyError: string | null = null;
+  private readonly reader: OutputReaderState;
+  private listEl: HTMLElement | null = null;
+  private listScroll = 0;
   private cursor: HistoryCursor | null = null;
   private pageError: string | null = null;
   // Panel selection is instance state, so a background refresh never moves the user's tab.
@@ -39,6 +40,7 @@ export class JobDetailModal extends Modal {
     private readonly historyLimit: number,
   ) {
     super(app);
+    this.reader = new OutputReaderState(profile, job.id, adapter, bodies, () => this.render());
   }
 
   override async onOpen(): Promise<void> {
@@ -84,27 +86,10 @@ export class JobDetailModal extends Modal {
     );
   }
 
-  private async openOutput(fileName: string): Promise<void> {
-    this.selectedOutput = fileName;
-    this.bodyError = null;
-    const key = `${this.profile.alias}\u0000${this.profile.profileId}\u0000${this.job.id}\u0000${fileName}`;
-    if (!this.bodies.has(key)) {
-      const command = buildReadOutputFile(this.profile.home, this.job.id, fileName);
-      if (!command.ok) {
-        this.bodyError = `${command.code}: ${command.detail}`;
-      } else {
-        const outcome = await this.adapter.run(this.profile.alias, command.command);
-        // Only a successful read is cached; a failed read must never become an empty body.
-        if (outcome.transport === "connected" && (outcome.exitCode ?? 0) === 0) {
-          this.bodies.set(key, outcome.stdout, outcome.capExceeded);
-        } else {
-          this.bodyError = outcome.stderr.trim() === ""
-            ? `could not read this output file (${outcome.transport})`
-            : outcome.stderr.trim();
-        }
-      }
-    }
-    this.render();
+  /** Opening a file remembers the list position so returning lands where the user left. */
+  private openOutput(fileName: string): void {
+    this.listScroll = this.listEl?.scrollTop ?? this.listScroll;
+    void this.reader.open(fileName);
   }
 
   /** Fetch the next bounded page using the native ordering's keyset cursor. */
@@ -168,8 +153,13 @@ export class JobDetailModal extends Modal {
     this.renderOutput(panel);
   }
 
-  /** Output: the native file selector, then the body of the file the user explicitly opened. */
+  /** Output: either the file list or the reader for one file, never both at once. */
   private renderOutput(panel: HTMLElement): void {
+    if (this.reader.fileName !== null) {
+      this.reader.render(panel, this.outputs);
+      return;
+    }
+
     panel.createEl("p", {
       cls: "hcv-evidence-note",
       text: "Hermes stores no link between a ledger row and an output file, so these are not paired.",
@@ -178,15 +168,8 @@ export class JobDetailModal extends Modal {
       panel.createEl("p", { cls: "hcv-evidence-empty", text: "Loading output files" });
       return;
     }
-    renderOutputPanel(panel, this.outputs, (name) => void this.openOutput(name), this.outputError);
-
-    if (this.bodyError !== null) {
-      panel.createEl("p", { cls: "hcv-evidence-empty", text: this.bodyError });
-    }
-
-    if (this.selectedOutput !== null) {
-      const key = `${this.profile.alias}\u0000${this.profile.profileId}\u0000${this.job.id}\u0000${this.selectedOutput}`;
-      renderVerbatimBody(panel, this.selectedOutput, this.bodies.get(key));
-    }
+    const list = renderOutputPanel(panel, this.outputs, (name) => this.openOutput(name), this.outputError);
+    this.listEl = list;
+    if (list !== null && this.listScroll > 0) list.scrollTop = this.listScroll;
   }
 }

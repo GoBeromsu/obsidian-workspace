@@ -1,4 +1,5 @@
 import type { CronJobRecord } from "./hermes-cron";
+import type { VerbatimEntry } from "./snapshot";
 
 /** One native-stated instant placed on a day axis. */
 export interface PlacedEntry {
@@ -93,10 +94,53 @@ export interface ViewerFilter {
 /** The job detail sections; exactly one panel is rendered at a time. */
 export type JobTabId = "overview" | "history" | "output";
 
+/** What the output reader shows for the one file the user explicitly opened. */
+export interface OutputReaderView {
+  readonly fileName: string;
+  /** The held body, or `undefined` when nothing is in memory for this file. */
+  readonly entry: VerbatimEntry | undefined;
+  /** A reader-local read failure; never rendered as an empty body. */
+  readonly error: string | null;
+  readonly loading: boolean;
+}
+
+/** Reader actions; `null` marks an end of the existing file order. */
+export interface OutputReaderActions {
+  readonly onBack: () => void;
+  readonly onPrevious: (() => void) | null;
+  readonly onNext: (() => void) | null;
+}
+
 /** Keyset cursor for "show more", mirroring the native `claimed_at DESC, id DESC` ordering. */
 export interface HistoryCursor {
   readonly claimedAt: string;
   readonly id: string;
+}
+
+/** Where the local wall clock sits on a midnight-to-24h axis. */
+export interface NowPosition {
+  readonly dayKey: string;
+  readonly hour: number;
+  readonly minute: number;
+  readonly minutesOfDay: number;
+  /** `HH:mm`, shown on the marker. */
+  readonly clock: string;
+}
+
+/** The already-created current-time marker nodes; the marker only moves them, never builds UI. */
+export interface TimelineNowElements {
+  readonly root: HTMLElement;
+  readonly time: HTMLElement;
+}
+
+/** The rendered day axis the marker operates on. Arrays are index-aligned with the axis. */
+export interface TimelineNowHost {
+  readonly dayKey: string;
+  readonly hourRows: readonly HTMLElement[];
+  readonly hourSlots: readonly HTMLElement[];
+  readonly entries: readonly PlacedEntry[];
+  readonly entryEls: readonly HTMLElement[];
+  readonly marker: TimelineNowElements;
 }
 
 /** Injectable timer surface so polling behavior is testable without real time. */
