@@ -17,6 +17,7 @@
 | Agent Skill Deploy | `agent-skill-deploy` | `plugin` | `incubator` | `main` | `medium` | `Test` |
 | Open Connections | `open-connections` | `plugin` | `stable` | `main` | `critical` | `Test` |
 | Note Player | `youtube-note-playlist` | `plugin` | `stable` | `main` | `high` | `Ataraxia` |
+| Hermes | `hermes-cron-viewer` | `plugin` | `incubator` | `main` | `high` | `Ataraxia` |
 
 ## Details
 
@@ -115,4 +116,16 @@
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
 - Smoke commands: `obsidian plugin:reload id=note-player`, `remote runtime verification in Ataraxia vault`
 - Notes: `Remote-only runtime verification remains the preferred smoke path`
+
+### Hermes
+
+- Path: `hermes-cron-viewer`
+- Repo kind: `root-local`
+- Plugin id: `hermes-cron-viewer`
+- Release kind: `incubator`
+- CI workflow: `CI`
+- Release workflow: `Release plugin`
+- Artifact files: `main.js`, `manifest.json`, `styles.css`
+- Smoke commands: `obsidian vault="Ataraxia" plugin:reload id="hermes-cron-viewer"`
+- Notes: `Root-local incubator: remote repository creation and push are not approved yet`, `Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH.`, `Promote to repo_kind=submodule with a repo_slug once the remote repository is approved`
 

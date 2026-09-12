@@ -221,6 +221,32 @@
       "notes": [
         "Remote-only runtime verification remains the preferred smoke path"
       ]
+    },
+    {
+      "name": "Hermes",
+      "repo_path": "hermes-cron-viewer",
+      "repo_kind": "root-local",
+      "git_branch": "main",
+      "plugin_id": "hermes-cron-viewer",
+      "portfolio_role": "plugin",
+      "release_kind": "incubator",
+      "artifact_files": [
+        "main.js",
+        "manifest.json",
+        "styles.css"
+      ],
+      "ci_workflow": "CI",
+      "release_workflow": "Release plugin",
+      "smoke_vault": "Ataraxia",
+      "smoke_commands": [
+        "obsidian vault=\"Ataraxia\" plugin:reload id=\"hermes-cron-viewer\""
+      ],
+      "risk_tier": "high",
+      "notes": [
+        "Root-local incubator: remote repository creation and push are not approved yet",
+        "Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH.",
+        "Promote to repo_kind=submodule with a repo_slug once the remote repository is approved"
+      ]
     }
   ]
 }
