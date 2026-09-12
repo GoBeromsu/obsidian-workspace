@@ -873,6 +873,22 @@
   overflow-wrap: anywhere;
 }
 
+.hcv-profile-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1);
+}
+
+.hcv-profile-action-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.hcv-profile-action-icon > svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
 .hcv-doc-confirm-actions {
   display: flex;
   justify-content: flex-end;

@@ -1,6 +1,7 @@
-import { Menu, Setting } from "obsidian";
+import { Setting, setIcon } from "obsidian";
 import type { ProfileRef } from "../types/hermes-cron";
 import type { ProfileSectionOptions } from "../types/contracts";
+import type { ProfileDocumentName } from "../types/profile-document";
 import { EDITABLE_DOCUMENT_NAMES } from "../types/profile-document";
 
 /**
@@ -44,28 +45,37 @@ function renderProfileRow(
 ): void {
   const row = new Setting(parent).setName(profile.profileId).setDesc(profile.home);
 
+  // Edit buttons first so the two related actions sit together, left of the rightmost toggle.
+  for (const name of EDITABLE_DOCUMENT_NAMES) addEditButton(row, profile, name, options);
+
   row.addToggle((toggle) =>
     toggle
       .setValue(options.isSelected(profile))
       .setTooltip("Show this profile in the viewer")
       .onChange((value) => void options.onToggle(profile, value)),
   );
+}
 
-  row.addExtraButton((button) => {
-    button.setIcon("pencil").setTooltip("Edit profile documents");
-    // ExtraButtonComponent.onClick() receives no event, but showAtMouseEvent needs one; the
-    // native click listener also covers keyboard activation, which dispatches a click.
-    button.extraSettingsEl.addEventListener("click", (event: MouseEvent) => {
-      const menu = new Menu();
-      for (const name of EDITABLE_DOCUMENT_NAMES) {
-        menu.addItem((item) =>
-          item
-            .setTitle(name)
-            .setIcon("pencil")
-            .onClick(() => options.onEditDocument(profile, name)),
-        );
-      }
-      menu.showAtMouseEvent(event);
-    });
+/**
+ * One small pencil+label button that opens the editor for a single allowlisted document.
+ *
+ * `ButtonComponent.setIcon()` replaces the button contents, so the icon is rendered into its own
+ * span next to the text instead.
+ */
+function addEditButton(
+  row: Setting,
+  profile: ProfileRef,
+  name: ProfileDocumentName,
+  options: ProfileSectionOptions,
+): void {
+  const label = name.replace(/\.md$/, "");
+  const description = `Edit ${name} for ${profile.profileId}`;
+  row.addButton((button) => {
+    button.setTooltip(description).onClick(() => options.onEditDocument(profile, name));
+    button.buttonEl.addClass("hcv-profile-action");
+    button.buttonEl.setAttribute("aria-label", description);
+    const icon = button.buttonEl.createSpan({ cls: "hcv-profile-action-icon" });
+    setIcon(icon, "pencil");
+    button.buttonEl.createSpan({ text: label });
   });
 }
