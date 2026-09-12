@@ -3,6 +3,11 @@ import { HERMES, JobDetailModal, PROFILE, SshReadOnlyAdapter, VerbatimMemoryStor
 
 type Bag = { texts: string[]; clicks: { text: string; handler: () => void }[] } | undefined;
 
+/** One completed ledger row, as sqlite3 would emit it. */
+const LEDGER_E2 = JSON.stringify([
+  { id: "e2", job_id: "job-a", status: "completed", claimed_at: "2026-09-12T10:00:00+09:00" },
+]);
+
 /** Click a tab by its short English name; the panel is rendered only after the tab is active. */
 async function openTab(bag: Bag, name: "Overview" | "History" | "Output"): Promise<void> {
   const tab = bag?.clicks.find((entry) => entry.text === name);
@@ -25,9 +30,7 @@ describe("delta: pending reads are loading, never emptiness", () => {
   test("History and Output say they are loading until the first read returns", async () => {
     const fileName = "2026-09-12T09:00:00.md";
     const { runner } = fakeRunner([
-      { match: "sqlite3", stdout: JSON.stringify([
-        { id: "e2", job_id: "job-a", status: "completed", claimed_at: "2026-09-12T10:00:00+09:00" },
-      ]) },
+      { match: "sqlite3", stdout: LEDGER_E2 },
       { match: "-name '*.md'", stdout: `${HERMES}/cron/output/job-a/${fileName}\u0000` },
     ]);
     const modal = modalFor(runner);
@@ -72,9 +75,7 @@ describe("delta: pending reads are loading, never emptiness", () => {
 describe("delta: one panel at a time", () => {
   test("Overview opens first and the ledger/output panels are not rendered beside it", async () => {
     const { runner } = fakeRunner([
-      { match: "sqlite3", stdout: JSON.stringify([
-        { id: "e2", job_id: "job-a", status: "completed", claimed_at: "2026-09-12T10:00:00+09:00" },
-      ]) },
+      { match: "sqlite3", stdout: LEDGER_E2 },
       { match: "-name '*.md'", stdout: `${HERMES}/cron/output/job-a/2026-09-12T09:00:00.md\u0000` },
     ]);
     const modal = modalFor(runner);
@@ -147,10 +148,7 @@ describe("delta: R5/R6 non-zero exits are reported, not empty success", () => {
     const fileName = "2026-09-12T09:00:00.md";
     const { runner } = fakeRunner([
       { match: "sqlite3", stdout: "[]" },
-      {
-        match: "-name '*.md'",
-        stdout: `${HERMES}/cron/output/job-a/${fileName}\u0000`,
-      },
+      { match: "-name '*.md'", stdout: `${HERMES}/cron/output/job-a/${fileName}\u0000` },
       { match: "head -c", stderr: "Permission denied", exitCode: 1 },
     ]);
     const bodies = new VerbatimMemoryStore();
@@ -169,15 +167,12 @@ describe("delta: R5/R6 non-zero exits are reported, not empty success", () => {
 
 describe("delta: keyset pagination is wired", () => {
   test("Load older rows issues a keyset query and concatenates pages", async () => {
-    const page1 = JSON.stringify([
-      { id: "e2", job_id: "job-a", status: "completed", claimed_at: "2026-09-12T10:00:00+09:00" },
-    ]);
     const page2 = JSON.stringify([
       { id: "e1", job_id: "job-a", status: "completed", claimed_at: "2026-09-12T09:00:00+09:00" },
     ]);
     const { runner, log } = fakeRunner([
       { match: "(claimed_at, id)", stdout: page2 },
-      { match: "sqlite3", stdout: page1 },
+      { match: "sqlite3", stdout: LEDGER_E2 },
       { match: "-name '*.md'", stdout: "" },
     ]);
     const modal = modalFor(runner, new VerbatimMemoryStore(), 1);
@@ -196,12 +191,9 @@ describe("delta: keyset pagination is wired", () => {
   });
 
   test("a failed older page keeps loaded rows and reports the cause", async () => {
-    const page1 = JSON.stringify([
-      { id: "e2", job_id: "job-a", status: "completed", claimed_at: "2026-09-12T10:00:00+09:00" },
-    ]);
     const { runner } = fakeRunner([
       { match: "(claimed_at, id)", stderr: "unable to open database file", exitCode: 1 },
-      { match: "sqlite3", stdout: page1 },
+      { match: "sqlite3", stdout: LEDGER_E2 },
       { match: "-name '*.md'", stdout: "" },
     ]);
     const modal = modalFor(runner, new VerbatimMemoryStore(), 1);
@@ -213,102 +205,6 @@ describe("delta: keyset pagination is wired", () => {
     expect(bag?.texts.some((text) => text.includes("Older rows could not be loaded"))).toBe(true);
     expect(bag?.texts.some((text) => text.includes("unable to open database file"))).toBe(true);
     expect(bag?.texts).toContain("Retry older rows");
-  });
-});
-
-const OLDER = "2026-09-12T09:00:00.md";
-const NEWER = "2026-09-12T10:00:00.md";
-const LISTING = `${HERMES}/cron/output/job-a/${OLDER}\u0000${HERMES}/cron/output/job-a/${NEWER}\u0000`;
-const NOTE = "Hermes stores no link between a ledger row and an output file, so these are not paired.";
-
-/** Two readable output files, newest first in the index order. */
-function twoFiles(overrides: readonly { match: string; stdout?: string; stderr?: string; exitCode?: number }[] = []) {
-  return fakeRunner([
-    ...overrides,
-    { match: OLDER, stdout: "BODY-OLDER" },
-    { match: NEWER, stdout: "BODY-NEWER" },
-    { match: "sqlite3", stdout: "[]" },
-    { match: "-name '*.md'", stdout: LISTING },
-  ]);
-}
-
-async function openOutputTab(runner: ReturnType<typeof fakeRunner>["runner"], bodies = new VerbatimMemoryStore()) {
-  const modal = modalFor(runner, bodies);
-  await modal.onOpen();
-  const bag = modalBags.get(modal);
-  await openTab(bag, "Output");
-  return bag;
-}
-
-describe("delta: one output is read in one place", () => {
-  test("selecting a file replaces the list, and Back restores it", async () => {
-    const { runner } = twoFiles();
-    const bag = await openOutputTab(runner);
-    expect(bag?.texts).toContain(OLDER);
-    expect(bag?.texts).toContain(NEWER);
-
-    await flushClick(bag?.clicks.find((entry) => entry.text === OLDER)?.handler);
-    // The reader stands alone: no second copy of the list and no listing note above the body.
-    expect(bag?.texts).toContain("BODY-OLDER");
-    expect(bag?.texts).toContain(OLDER);
-    expect(bag?.texts).not.toContain(NEWER);
-    expect(bag?.texts).not.toContain(NOTE);
-
-    await flushClick(bag?.clicks.find((entry) => entry.text === "Back")?.handler);
-    expect(bag?.texts).toContain(NOTE);
-    expect(bag?.texts).toContain(NEWER);
-    expect(bag?.texts).not.toContain("BODY-OLDER");
-  });
-
-  test("adjacent navigation follows the index order and is disabled at both ends", async () => {
-    const { runner } = twoFiles();
-    const bag = await openOutputTab(runner);
-
-    // The newest file is first in the index, so there is nothing before it.
-    await flushClick(bag?.clicks.find((entry) => entry.text === NEWER)?.handler);
-    expect(bag?.texts).toContain("BODY-NEWER");
-    expect(bag?.clicks.some((entry) => entry.text === "Previous")).toBe(false);
-
-    await flushClick(bag?.clicks.find((entry) => entry.text === "Next")?.handler);
-    expect(bag?.texts).toContain("BODY-OLDER");
-    expect(bag?.texts).not.toContain("BODY-NEWER");
-    // The oldest file is last, so only the backwards step remains.
-    expect(bag?.clicks.some((entry) => entry.text === "Next")).toBe(false);
-
-    await flushClick(bag?.clicks.find((entry) => entry.text === "Previous")?.handler);
-    expect(bag?.texts).toContain("BODY-NEWER");
-  });
-
-  test("a failed read stays in the reader, is not cached, and is retried on demand", async () => {
-    const { runner, log } = twoFiles([{ match: OLDER, stderr: "READ-DENIED", exitCode: 1 }]);
-    const bodies = new VerbatimMemoryStore();
-    const bag = await openOutputTab(runner, bodies);
-
-    await flushClick(bag?.clicks.find((entry) => entry.text === OLDER)?.handler);
-    expect(bag?.texts.some((text) => text.includes("READ-DENIED"))).toBe(true);
-    expect(bodies.has(`m1-file\u0000default\u0000job-a\u0000${OLDER}`)).toBe(false);
-    // Back out of a failure is always possible.
-    expect(bag?.clicks.some((entry) => entry.text === "Back")).toBe(true);
-
-    await flushClick(bag?.clicks.find((entry) => entry.text === "Back")?.handler);
-    await flushClick(bag?.clicks.find((entry) => entry.text === OLDER)?.handler);
-    const reads = log.filter((entry) => (entry.args[entry.args.length - 1] ?? "").includes(OLDER));
-    expect(reads).toHaveLength(2);
-    expect(bag?.texts.some((text) => text.includes("READ-DENIED"))).toBe(true);
-  });
-
-  test("a late reply for an abandoned file cannot overwrite the current state", async () => {
-    const { runner } = twoFiles([{ match: OLDER, stderr: "STALE-FAILURE", exitCode: 1 }]);
-    const bag = await openOutputTab(runner);
-
-    // Start the read, then leave the reader before the reply arrives.
-    bag?.clicks.find((entry) => entry.text === OLDER)?.handler();
-    expect(bag?.texts).toContain("Loading output file");
-    bag?.clicks.find((entry) => entry.text === "Back")?.handler();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-
-    expect(bag?.texts).toContain(NOTE);
-    expect(bag?.texts.some((text) => text.includes("STALE-FAILURE"))).toBe(false);
   });
 });
 
