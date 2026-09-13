@@ -1,0 +1,54 @@
+name: Build release artifacts
+
+# Builds the plugin and checks artifact/version consistency.
+# This workflow does not run the test suite: the full suite requires a live
+# installed Obsidian and is run locally.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build
+        run: bun run build
+
+      - name: Verify artifacts and version consistency
+        run: |
+          bun --eval '
+            import fs from "node:fs";
+
+            const required = ["main.js", "manifest.json", "styles.css"];
+            const missing = required.filter((file) => !fs.existsSync(file));
+            if (missing.length > 0) {
+              console.error(`Missing release artifacts: ${missing.join(", ")}`);
+              process.exit(1);
+            }
+
+            const manifest = JSON.parse(fs.readFileSync("manifest.json", "utf8"));
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            if (manifest.version !== pkg.version) {
+              console.error(
+                `Version mismatch: manifest.json ${manifest.version} !== package.json ${pkg.version}`,
+              );
+              process.exit(1);
+            }
+
+            console.log(`Artifacts present; version ${manifest.version} consistent`);
+          '

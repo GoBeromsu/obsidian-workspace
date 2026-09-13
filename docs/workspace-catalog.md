@@ -123,9 +123,9 @@
 - Repo kind: `root-local`
 - Plugin id: `hermes-cron-viewer`
 - Release kind: `incubator`
-- CI workflow: `CI`
-- Release workflow: `Release plugin`
+- CI workflow: `Build release artifacts`
+- Release workflow: `null`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`
 - Smoke commands: `obsidian vault="Ataraxia" plugin:reload id="hermes-cron-viewer"`
-- Notes: `Root-local incubator: remote repository creation and push are not approved yet`, `Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH.`, `Promote to repo_kind=submodule with a repo_slug once the remote repository is approved`
+- Notes: `Public child repo GoBeromsu/obsidian-hermes owns releases for this plugin`, `Workspace source is currently maintained locally at hermes-cron-viewer/ and exported to the child repo by subtree export`, `Release workflow is not automated yet: releases are performed manually in the child repo`, `Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH.`
 
