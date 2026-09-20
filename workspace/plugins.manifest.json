@@ -1,17 +1,19 @@
 {
-  "workspace_kind": "submodule-workspace",
+  "workspace_kind": "linked-workspace",
   "manifest_version": 1,
   "generated_catalog": "docs/workspace-catalog.md",
   "plugins": [
     {
       "name": "Metadata Auto Classifier",
       "repo_path": "Metadata-Auto-Classifier",
-      "repo_kind": "submodule",
+      "repo_kind": "linked",
       "repo_slug": "GoBeromsu/Metadata-Auto-Classifier",
-      "git_branch": "master",
+      "git_branch": "main",
       "plugin_id": "metadata-auto-classifier",
       "portfolio_role": "plugin",
       "release_kind": "stable",
+      "install_channel": "community",
+      "release_url": "https://github.com/GoBeromsu/Metadata-Auto-Classifier/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
@@ -33,12 +35,14 @@
     {
       "name": "Bible Search",
       "repo_path": "obsidian-bible-search",
-      "repo_kind": "submodule",
+      "repo_kind": "linked",
       "repo_slug": "GoBeromsu/obsidian-bible-search",
       "git_branch": "main",
       "plugin_id": "obsidian-bible-search",
       "portfolio_role": "plugin",
       "release_kind": "stable",
+      "install_channel": "brat",
+      "release_url": "https://github.com/GoBeromsu/obsidian-bible-search/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
@@ -61,12 +65,14 @@
     {
       "name": "Boiler Template",
       "repo_path": "obsidian-boiler-template",
-      "repo_kind": "submodule",
+      "repo_kind": "linked",
       "repo_slug": "GoBeromsu/obsidian-boiler-template",
-      "git_branch": "master",
+      "git_branch": "main",
       "plugin_id": "sample-plugin",
       "portfolio_role": "template",
       "release_kind": "stable",
+      "install_channel": "none",
+      "release_url": "https://github.com/GoBeromsu/obsidian-boiler-template/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
@@ -89,12 +95,14 @@
     {
       "name": "Eagle Plugin",
       "repo_path": "obsidian-eagle-plugin",
-      "repo_kind": "submodule",
+      "repo_kind": "linked",
       "repo_slug": "GoBeromsu/obsidian-eagle-plugin",
       "git_branch": "main",
       "plugin_id": "eagle",
       "portfolio_role": "plugin",
       "release_kind": "stable",
+      "install_channel": "community",
+      "release_url": "https://github.com/GoBeromsu/obsidian-eagle-plugin/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
@@ -115,12 +123,14 @@
     {
       "name": "QMD",
       "repo_path": "obsidian-qmd",
-      "repo_kind": "submodule",
+      "repo_kind": "linked",
       "repo_slug": "GoBeromsu/obsidian-qmd",
       "git_branch": "main",
       "plugin_id": "obsidian-qmd",
       "portfolio_role": "plugin",
       "release_kind": "stable",
+      "install_channel": "brat",
+      "release_url": "https://github.com/GoBeromsu/obsidian-qmd/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
@@ -142,12 +152,14 @@
     {
       "name": "Agent Skill Deploy",
       "repo_path": "agent-skill-deploy",
-      "repo_kind": "submodule",
+      "repo_kind": "linked",
       "repo_slug": "GoBeromsu/agent-skill-deploy",
       "git_branch": "main",
       "plugin_id": "skill-deploy",
       "portfolio_role": "plugin",
       "release_kind": "incubator",
+      "install_channel": "brat",
+      "release_url": "https://github.com/GoBeromsu/agent-skill-deploy/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
@@ -169,12 +181,14 @@
     {
       "name": "Open Connections",
       "repo_path": "open-connections",
-      "repo_kind": "submodule",
+      "repo_kind": "linked",
       "repo_slug": "GoBeromsu/open-connections",
       "git_branch": "main",
       "plugin_id": "open-connections",
       "portfolio_role": "plugin",
       "release_kind": "stable",
+      "install_channel": "community",
+      "release_url": "https://github.com/GoBeromsu/open-connections/releases/latest",
       "artifact_files": [
         "dist/main.js",
         "dist/manifest.json",
@@ -198,12 +212,14 @@
     {
       "name": "Note Player",
       "repo_path": "youtube-note-playlist",
-      "repo_kind": "submodule",
+      "repo_kind": "linked",
       "repo_slug": "GoBeromsu/obsidian-note-player",
       "git_branch": "main",
       "plugin_id": "note-player",
       "portfolio_role": "plugin",
       "release_kind": "stable",
+      "install_channel": "brat",
+      "release_url": "https://github.com/GoBeromsu/obsidian-note-player/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
@@ -226,26 +242,30 @@
       "name": "Hermes",
       "repo_path": "hermes-cron-viewer",
       "repo_kind": "root-local",
+      "repo_slug": "GoBeromsu/obsidian-hermes",
       "git_branch": "main",
       "plugin_id": "hermes-cron-viewer",
       "portfolio_role": "plugin",
       "release_kind": "incubator",
+      "install_channel": "brat",
+      "release_url": "https://github.com/GoBeromsu/obsidian-hermes/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
         "styles.css"
       ],
-      "ci_workflow": "CI",
-      "release_workflow": "Release plugin",
+      "ci_workflow": "Build release artifacts",
+      "release_workflow": null,
       "smoke_vault": "Ataraxia",
       "smoke_commands": [
         "obsidian vault=\"Ataraxia\" plugin:reload id=\"hermes-cron-viewer\""
       ],
       "risk_tier": "high",
       "notes": [
-        "Root-local incubator: remote repository creation and push are not approved yet",
-        "Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH.",
-        "Promote to repo_kind=submodule with a repo_slug once the remote repository is approved"
+        "Public child repo GoBeromsu/obsidian-hermes owns releases for this plugin",
+        "Workspace source is currently maintained locally at hermes-cron-viewer/ and exported to the child repo by subtree export",
+        "Release workflow is not automated yet: releases are performed manually in the child repo",
+        "Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH."
       ]
     }
   ]

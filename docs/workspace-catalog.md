@@ -2,31 +2,32 @@
 
 > Generated from `workspace/plugins.manifest.json`. Edit the manifest, then rerun `node workspace/generate-catalog.mjs`.
 
-- Workspace kind: `submodule-workspace`
+- Workspace kind: `linked-workspace`
 - Manifest version: `1`
 
 ## Portfolio
 
-| Name | Path | Role | Release kind | Branch | Risk | Smoke vault |
-|------|------|------|--------------|--------|------|-------------|
-| Metadata Auto Classifier | `Metadata-Auto-Classifier` | `plugin` | `stable` | `master` | `medium` | `Test` |
-| Bible Search | `obsidian-bible-search` | `plugin` | `stable` | `main` | `medium` | `Test` |
-| Boiler Template | `obsidian-boiler-template` | `template` | `stable` | `master` | `high` | `Test` |
-| Eagle Plugin | `obsidian-eagle-plugin` | `plugin` | `stable` | `main` | `high` | `Test` |
-| QMD | `obsidian-qmd` | `plugin` | `stable` | `main` | `high` | `Test` |
-| Agent Skill Deploy | `agent-skill-deploy` | `plugin` | `incubator` | `main` | `medium` | `Test` |
-| Open Connections | `open-connections` | `plugin` | `stable` | `main` | `critical` | `Test` |
-| Note Player | `youtube-note-playlist` | `plugin` | `stable` | `main` | `high` | `Ataraxia` |
-| Hermes | `hermes-cron-viewer` | `plugin` | `incubator` | `main` | `high` | `Ataraxia` |
+| Name | Path | Role | Install | Release kind | Branch | Risk | Smoke vault |
+|------|------|------|---------|--------------|--------|------|-------------|
+| Metadata Auto Classifier | `Metadata-Auto-Classifier` | `plugin` | [Community store](https://github.com/GoBeromsu/Metadata-Auto-Classifier/releases/latest) | `stable` | `main` | `medium` | `Test` |
+| Bible Search | `obsidian-bible-search` | `plugin` | [brat](https://github.com/GoBeromsu/obsidian-bible-search/releases/latest) | `stable` | `main` | `medium` | `Test` |
+| Boiler Template | `obsidian-boiler-template` | `template` | — | `stable` | `main` | `high` | `Test` |
+| Eagle Plugin | `obsidian-eagle-plugin` | `plugin` | [Community store](https://github.com/GoBeromsu/obsidian-eagle-plugin/releases/latest) | `stable` | `main` | `high` | `Test` |
+| QMD | `obsidian-qmd` | `plugin` | [brat](https://github.com/GoBeromsu/obsidian-qmd/releases/latest) | `stable` | `main` | `high` | `Test` |
+| Agent Skill Deploy | `agent-skill-deploy` | `plugin` | [brat](https://github.com/GoBeromsu/agent-skill-deploy/releases/latest) | `incubator` | `main` | `medium` | `Test` |
+| Open Connections | `open-connections` | `plugin` | [Community store](https://github.com/GoBeromsu/open-connections/releases/latest) | `stable` | `main` | `critical` | `Test` |
+| Note Player | `youtube-note-playlist` | `plugin` | [brat](https://github.com/GoBeromsu/obsidian-note-player/releases/latest) | `stable` | `main` | `high` | `Ataraxia` |
+| Hermes | `hermes-cron-viewer` | `plugin` | [brat](https://github.com/GoBeromsu/obsidian-hermes/releases/latest) | `incubator` | `main` | `high` | `Ataraxia` |
 
 ## Details
 
 ### Metadata Auto Classifier
 
 - Path: `Metadata-Auto-Classifier`
-- Repo kind: `submodule`
+- Repo kind: `linked`
 - Plugin id: `metadata-auto-classifier`
 - Release kind: `stable`
+- Install: [Community store](https://github.com/GoBeromsu/Metadata-Auto-Classifier/releases/latest)
 - CI workflow: `CI`
 - Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
@@ -36,9 +37,10 @@
 ### Bible Search
 
 - Path: `obsidian-bible-search`
-- Repo kind: `submodule`
+- Repo kind: `linked`
 - Plugin id: `obsidian-bible-search`
 - Release kind: `stable`
+- Install: [brat](https://github.com/GoBeromsu/obsidian-bible-search/releases/latest)
 - CI workflow: `CI`
 - Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
@@ -48,9 +50,10 @@
 ### Boiler Template
 
 - Path: `obsidian-boiler-template`
-- Repo kind: `submodule`
+- Repo kind: `linked`
 - Plugin id: `sample-plugin`
 - Release kind: `stable`
+- Install: —
 - CI workflow: `CI`
 - Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
@@ -60,9 +63,10 @@
 ### Eagle Plugin
 
 - Path: `obsidian-eagle-plugin`
-- Repo kind: `submodule`
+- Repo kind: `linked`
 - Plugin id: `eagle`
 - Release kind: `stable`
+- Install: [Community store](https://github.com/GoBeromsu/obsidian-eagle-plugin/releases/latest)
 - CI workflow: `CI`
 - Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
@@ -72,9 +76,10 @@
 ### QMD
 
 - Path: `obsidian-qmd`
-- Repo kind: `submodule`
+- Repo kind: `linked`
 - Plugin id: `obsidian-qmd`
 - Release kind: `stable`
+- Install: [brat](https://github.com/GoBeromsu/obsidian-qmd/releases/latest)
 - CI workflow: `CI`
 - Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
@@ -84,9 +89,10 @@
 ### Agent Skill Deploy
 
 - Path: `agent-skill-deploy`
-- Repo kind: `submodule`
+- Repo kind: `linked`
 - Plugin id: `skill-deploy`
 - Release kind: `incubator`
+- Install: [brat](https://github.com/GoBeromsu/agent-skill-deploy/releases/latest)
 - CI workflow: `CI`
 - Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
@@ -96,9 +102,10 @@
 ### Open Connections
 
 - Path: `open-connections`
-- Repo kind: `submodule`
+- Repo kind: `linked`
 - Plugin id: `open-connections`
 - Release kind: `stable`
+- Install: [Community store](https://github.com/GoBeromsu/open-connections/releases/latest)
 - CI workflow: `CI`
 - Release workflow: `Release plugin`
 - Artifact files: `dist/main.js`, `dist/manifest.json`, `dist/styles.css`, `versions.json`
@@ -108,9 +115,10 @@
 ### Note Player
 
 - Path: `youtube-note-playlist`
-- Repo kind: `submodule`
+- Repo kind: `linked`
 - Plugin id: `note-player`
 - Release kind: `stable`
+- Install: [brat](https://github.com/GoBeromsu/obsidian-note-player/releases/latest)
 - CI workflow: `CI`
 - Release workflow: `Release plugin`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`, `versions.json`
@@ -123,9 +131,10 @@
 - Repo kind: `root-local`
 - Plugin id: `hermes-cron-viewer`
 - Release kind: `incubator`
-- CI workflow: `CI`
-- Release workflow: `Release plugin`
+- Install: [brat](https://github.com/GoBeromsu/obsidian-hermes/releases/latest)
+- CI workflow: `Build release artifacts`
+- Release workflow: `null`
 - Artifact files: `main.js`, `manifest.json`, `styles.css`
 - Smoke commands: `obsidian vault="Ataraxia" plugin:reload id="hermes-cron-viewer"`
-- Notes: `Root-local incubator: remote repository creation and push are not approved yet`, `Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH.`, `Promote to repo_kind=submodule with a repo_slug once the remote repository is approved`
+- Notes: `Public child repo GoBeromsu/obsidian-hermes owns releases for this plugin`, `Workspace source is currently maintained locally at hermes-cron-viewer/ and exported to the child repo by subtree export`, `Release workflow is not automated yet: releases are performed manually in the child repo`, `Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH.`
 

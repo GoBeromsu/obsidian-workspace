@@ -11,6 +11,8 @@ const requiredPluginFields = [
   'plugin_id',
   'portfolio_role',
   'release_kind',
+  'install_channel',
+  'release_url',
   'artifact_files',
   'ci_workflow',
   'release_workflow',
@@ -49,12 +51,20 @@ function validatePlugin(plugin, seenPaths) {
   }
   seenPaths.add(plugin.repo_path);
 
-  if (!['submodule', 'root-local'].includes(plugin.repo_kind)) {
-    fail(`${plugin.name}: repo_kind must be "submodule" or "root-local"`);
+  if (!['linked', 'root-local'].includes(plugin.repo_kind)) {
+    fail(`${plugin.name}: repo_kind must be "linked" or "root-local"`);
   }
 
   if (!['stable', 'beta', 'incubator'].includes(plugin.release_kind)) {
     fail(`${plugin.name}: release_kind must be stable, beta, or incubator`);
+  }
+
+  if (!['community', 'brat', 'manual', 'none'].includes(plugin.install_channel)) {
+    fail(`${plugin.name}: install_channel must be community, brat, manual, or none`);
+  }
+
+  if (plugin.release_url !== null && !/^https:\/\/github\.com\/\S+\/releases\/latest$/.test(plugin.release_url ?? '')) {
+    fail(`${plugin.name}: release_url must be a GitHub latest-release URL or null`);
   }
 
   if (!Array.isArray(plugin.artifact_files) || plugin.artifact_files.length === 0) {
@@ -65,23 +75,29 @@ function validatePlugin(plugin, seenPaths) {
     fail(`${plugin.name}: smoke_commands must be a non-empty array`);
   }
 
-  const absoluteRepoPath = path.resolve(process.cwd(), plugin.repo_path);
-  if (!fs.existsSync(absoluteRepoPath)) {
-    fail(`${plugin.name}: repo_path does not exist: ${plugin.repo_path}`);
+  // Linked plugin clones are gitignored, so they are absent on a bare checkout
+  // and in CI. Only a local workbench can require them.
+  if (requireLocal) {
+    const absoluteRepoPath = path.resolve(process.cwd(), plugin.repo_path);
+    if (!fs.existsSync(absoluteRepoPath)) {
+      fail(`${plugin.name}: repo_path does not exist: ${plugin.repo_path}`);
+    }
   }
 
   if (plugin.repo_kind === 'root-local' && plugin.release_kind !== 'incubator') {
     fail(`${plugin.name}: root-local portfolio members must remain incubator until promoted`);
   }
 
-  if (plugin.repo_kind === 'submodule' && !isNonEmptyString(plugin.repo_slug)) {
-    fail(`${plugin.name}: submodule portfolio members require repo_slug`);
+  if (plugin.repo_kind === 'linked' && !isNonEmptyString(plugin.repo_slug)) {
+    fail(`${plugin.name}: linked portfolio members require repo_slug`);
   }
 }
 
+const requireLocal = process.argv.includes('--require-local');
+
 const manifest = readManifest();
-if (manifest.workspace_kind !== 'submodule-workspace') {
-  fail('workspace_kind must be "submodule-workspace"');
+if (manifest.workspace_kind !== 'linked-workspace') {
+  fail('workspace_kind must be "linked-workspace"');
 }
 
 if (!Array.isArray(manifest.plugins) || manifest.plugins.length === 0) {

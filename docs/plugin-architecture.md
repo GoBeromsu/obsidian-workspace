@@ -1,6 +1,6 @@
 # Plugin Architecture
 
-> The repeated internal contract every plugin in this submodule workspace should follow.
+> The repeated internal contract every plugin in this linked workspace should follow.
 
 ## Summary
 

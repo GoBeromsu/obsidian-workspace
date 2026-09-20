@@ -10,6 +10,7 @@ function parseArgs(argv) {
     markdownOut: '.artifacts/release-readiness.md',
     jsonOut: '.artifacts/release-readiness.json',
     strict: false,
+    requireLocal: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -18,6 +19,7 @@ function parseArgs(argv) {
     else if (arg === '--markdown-out') options.markdownOut = argv[++i];
     else if (arg === '--json-out') options.jsonOut = argv[++i];
     else if (arg === '--strict') options.strict = true;
+    else if (arg === '--require-local') options.requireLocal = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -37,19 +39,17 @@ function run(command, args) {
   return { ok: true, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 }
 
-function getSubmoduleShaMap() {
-  const map = new Map();
-  const result = run('git', ['submodule', 'status']);
-  if (!result.ok) return map;
-  for (const line of result.stdout.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const [, sha, repoPath] = trimmed.match(/^[- +]?([0-9a-f]+)\s+(\S+)/) ?? [];
-    if (sha && repoPath) {
-      map.set(repoPath, sha);
-    }
+// Child repos own their releases; the root pins nothing. The per-plugin ref
+// therefore comes from the child repo's own latest published release.
+function getLatestReleaseTag(repoSlug) {
+  if (!repoSlug) return null;
+  const result = run('gh', ['release', 'view', '-R', repoSlug, '--json', 'tagName']);
+  if (!result.ok) return null;
+  try {
+    return JSON.parse(result.stdout).tagName ?? null;
+  } catch {
+    return null;
   }
-  return map;
 }
 
 function getLatestWorkflow(repoSlug, workflowName) {
@@ -85,10 +85,13 @@ function getLatestWorkflow(repoSlug, workflowName) {
   };
 }
 
-function evaluatePlugin(plugin, submoduleShas) {
+function evaluatePlugin(plugin, requireLocal) {
   const issues = [];
-  const repoExists = fs.existsSync(path.resolve(process.cwd(), plugin.repo_path));
-  if (!repoExists) issues.push('repo_path_missing');
+  // Linked clones are gitignored, so they are absent on a bare checkout and in
+  // CI. Their absence is only a finding for a local workbench.
+  if (requireLocal && !fs.existsSync(path.resolve(process.cwd(), plugin.repo_path))) {
+    issues.push('repo_path_missing');
+  }
 
   if (plugin.repo_kind === 'root-local' && plugin.release_kind !== 'incubator') {
     issues.push('root_local_releaseable_plugin');
@@ -104,7 +107,7 @@ function evaluatePlugin(plugin, submoduleShas) {
 
   const ci = getLatestWorkflow(plugin.repo_slug, plugin.ci_workflow);
   const release = getLatestWorkflow(plugin.repo_slug, plugin.release_workflow);
-  const sha = plugin.repo_kind === 'submodule' ? submoduleShas.get(plugin.repo_path) ?? null : null;
+  const latestReleaseTag = getLatestReleaseTag(plugin.repo_slug);
 
   if (plugin.release_kind !== 'incubator' && ci.state !== 'passing') {
     issues.push('ci_not_green');
@@ -124,7 +127,7 @@ function evaluatePlugin(plugin, submoduleShas) {
     plugin_id: plugin.plugin_id,
     release_kind: plugin.release_kind,
     risk_tier: plugin.risk_tier,
-    submodule_sha: sha,
+    latest_release_tag: latestReleaseTag,
     ci,
     release,
     status,
@@ -161,8 +164,7 @@ function toMarkdown(manifest, report) {
 
 const options = parseArgs(process.argv.slice(2));
 const manifest = readJson(path.resolve(process.cwd(), options.manifest));
-const submoduleShas = getSubmoduleShaMap();
-const report = manifest.plugins.map((plugin) => evaluatePlugin(plugin, submoduleShas));
+const report = manifest.plugins.map((plugin) => evaluatePlugin(plugin, options.requireLocal));
 
 fs.mkdirSync(path.dirname(path.resolve(process.cwd(), options.markdownOut)), { recursive: true });
 fs.mkdirSync(path.dirname(path.resolve(process.cwd(), options.jsonOut)), { recursive: true });

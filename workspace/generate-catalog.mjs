@@ -15,6 +15,12 @@ function formatList(items) {
   return items.map((item) => `\`${item}\``).join(', ');
 }
 
+function formatInstall(plugin) {
+  if (plugin.install_channel === 'none') return '—';
+  const label = plugin.install_channel === 'community' ? 'Community store' : plugin.install_channel;
+  return plugin.release_url ? `[${label}](${plugin.release_url})` : label;
+}
+
 function buildCatalog(manifest) {
   const lines = [
     '# Workspace Catalog',
@@ -26,13 +32,13 @@ function buildCatalog(manifest) {
     '',
     '## Portfolio',
     '',
-    '| Name | Path | Role | Release kind | Branch | Risk | Smoke vault |',
-    '|------|------|------|--------------|--------|------|-------------|',
+    '| Name | Path | Role | Install | Release kind | Branch | Risk | Smoke vault |',
+    '|------|------|------|---------|--------------|--------|------|-------------|',
   ];
 
   for (const plugin of manifest.plugins) {
     lines.push(
-      `| ${plugin.name} | \`${plugin.repo_path}\` | \`${plugin.portfolio_role}\` | \`${plugin.release_kind}\` | \`${plugin.git_branch}\` | \`${plugin.risk_tier}\` | \`${plugin.smoke_vault}\` |`,
+      `| ${plugin.name} | \`${plugin.repo_path}\` | \`${plugin.portfolio_role}\` | ${formatInstall(plugin)} | \`${plugin.release_kind}\` | \`${plugin.git_branch}\` | \`${plugin.risk_tier}\` | \`${plugin.smoke_vault}\` |`,
     );
   }
 
@@ -44,6 +50,7 @@ function buildCatalog(manifest) {
     lines.push(`- Repo kind: \`${plugin.repo_kind}\``);
     lines.push(`- Plugin id: \`${plugin.plugin_id}\``);
     lines.push(`- Release kind: \`${plugin.release_kind}\``);
+    lines.push(`- Install: ${formatInstall(plugin)}`);
     lines.push(`- CI workflow: \`${plugin.ci_workflow}\``);
     lines.push(`- Release workflow: \`${plugin.release_workflow}\``);
     lines.push(`- Artifact files: ${formatList(plugin.artifact_files)}`);
