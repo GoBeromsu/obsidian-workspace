@@ -1,15 +1,15 @@
 ---
 name: obsidian-workspace-skill
-description: Development conventions and architecture guide for the Obsidian plugin monorepo.
+description: Development conventions and architecture guide for the Obsidian plugin linked workspace.
 ---
 
 # Obsidian Workspace — Repository Skill
 
 ## Project Overview
 
-A monorepo of Obsidian community plugins sharing a common architecture enforced by a boiler-template sync engine. All plugins follow a strict 4-layer architecture with ESLint-enforced layer boundaries.
+A linked workspace of Obsidian community plugins sharing a common architecture enforced by a boiler-template sync engine. All plugins follow a strict 4-layer architecture with ESLint-enforced layer boundaries.
 
-**Codebase:** 7 plugin submodules + 1 boiler-template, TypeScript under `src/`.
+**Codebase:** independent plugin repos cloned locally by `node workspace/bootstrap.mjs`, plus the boiler-template, TypeScript under `src/`. The authoritative roster is [`docs/workspace-catalog.md`](docs/workspace-catalog.md), generated from `workspace/plugins.manifest.json`.
 
 ## Tech Stack
 
@@ -19,7 +19,7 @@ A monorepo of Obsidian community plugins sharing a common architecture enforced 
 | Runtime | Node.js via Obsidian's Electron |
 | UI Framework | Obsidian API (Views, Modals, Settings) |
 | Build | esbuild (`esbuild.config.mjs`) |
-| Package Manager | pnpm (workspace) |
+| Package Manager | pnpm (per plugin repo) |
 | Linter | ESLint flat config (`eslint.config.mts`) |
 | Commit Lint | commitlint + Husky hooks |
 | Release | Automated via `scripts/release.mjs` |
@@ -48,17 +48,9 @@ shared/ ─┘               │
                           └── shared/
 ```
 
-### Monorepo Layout
+### Workspace Layout
 
-| Submodule | Purpose | Default Branch |
-|-----------|---------|----------------|
-| `obsidian-eagle-plugin` | Image upload to Eagle app | `main` |
-| `open-connections` | Semantic note connections via embeddings | `main` |
-| `Metadata-Auto-Classifier` | AI-powered metadata classification | `master` |
-| `obsidian-boiler-template` | Source-of-truth seed template | `master` |
-| `obsidian-bible-search` | Bible verse search (private) | `main` |
-| `obsidian-qmd` | QMD semantic search integration | `main` |
-| `youtube-note-playlist` | YouTube music player via yt-dlp | `main` |
+Each plugin is an independent repository cloned into a git-ignored directory at the workspace root. Paths, slugs, branches and install channels live in `workspace/plugins.manifest.json`; the rendered roster is [`docs/workspace-catalog.md`](docs/workspace-catalog.md). Do not duplicate that list here — it goes stale.
 
 ### Key Files (per plugin)
 

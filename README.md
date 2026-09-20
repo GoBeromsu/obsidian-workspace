@@ -1,8 +1,8 @@
 # Obsidian Workspace
 
-My Obsidian plugin ecosystem. Each plugin lives as an independent repository, linked here as submodules. **Your tools should fit your thinking, not the other way around.**
+My Obsidian plugin ecosystem. Each plugin lives as an independent repository, mapped here by the workspace manifest. **Your tools should fit your thinking, not the other way around.**
 
-This repository is a **submodule workspace** and portfolio control plane, not a package monorepo.
+This repository is a **linked workspace** and portfolio control plane, not a package monorepo. It tracks the map, never the plugin code: plugin directories are git-ignored local clones materialised from [`workspace/plugins.manifest.json`](workspace/plugins.manifest.json).
 
 - Plugin implementation and final releases live in child repos.
 - Shared deterministic contracts live in `obsidian-boiler-template`.
@@ -35,33 +35,57 @@ The root repo owns:
 
 The current root-level release gate is report-only. It validates portfolio metadata and emits a release readiness report without taking release authority away from child plugin repos.
 
-The former root-local `obsidian-skill-deploy` incubator has been promoted into the independent [agent-skill-deploy](https://github.com/GoBeromsu/agent-skill-deploy) submodule.
+The former root-local `obsidian-skill-deploy` incubator has been promoted into the independent [agent-skill-deploy](https://github.com/GoBeromsu/agent-skill-deploy) repository.
 
 ## Quick Start
 
+Requires Node.js 24 or newer. This workbench is Eagle-only for now: Eagle is the only audited initial selector. Other plugin selectors are explicitly unsupported.
+
 ```bash
-git clone --recurse-submodules https://github.com/GoBeromsu/obsidian-workspace.git
+git clone https://github.com/GoBeromsu/obsidian-workspace.git
 cd obsidian-workspace
 
-# Set your vault path
-cp .env.example .env
-# Edit .env → OBSIDIAN_VAULT_PATH=/path/to/your/vault
+# Clone every plugin repo listed in the manifest (idempotent).
+# Bootstrap does not install dependencies.
+node workspace/bootstrap.mjs
 
-# Work on a specific plugin
-cd obsidian-eagle-plugin
-pnpm install
-pnpm dev
+# Dedicated empty owned vault — never a production vault
+cp .env.example .env
+# .env → OBSIDIAN_VAULT_PATH=.dev-vault
+
+node workspace/dev.mjs list
+node workspace/dev.mjs init
 ```
 
-### Commands (per plugin)
+Install and enable the Obsidian CLI, then in Obsidian use **Open folder as vault** to register only `root/.dev-vault`. `obsidian://choose-vault` is a convenient optional entry point. Never rewrite the Obsidian vault registry or open a production vault with this workbench.
+
+The workbench does not auto-install. Install Eagle dependencies yourself only when they are missing:
 
 ```bash
-pnpm dev      # Watch mode + hot reload into vault
-pnpm build    # Production build
-pnpm test     # Vitest
-pnpm lint     # ESLint
-pnpm run ci   # build + lint + test
+cd obsidian-eagle-plugin
+pnpm install
+cd ..
 ```
+
+Then from the workspace root (`build` / `watch` / `verify` require an explicit selector; there is no default):
+
+```bash
+node workspace/dev.mjs build eagle
+node workspace/dev.mjs watch eagle
+node workspace/dev.mjs verify eagle
+```
+
+Live `build` and `watch` use the child's existing **build** script, not the legacy `dev` script. Root `.env` is forwarded into the child process and child deployment paths are blocked. Artifacts are runtime-only; plugin `data/` and settings are preserved. Live `configDir` is discovered through the Obsidian API: its receipt is vault-relative and supports custom configuration folders. A missing live vault or unavailable Obsidian CLI is an error.
+
+Successful `build` and `watch` JSON output includes `deployed`, `reloaded`, and `verified` receipts. Stop `watch` with Ctrl-C: before deployment, cancellation stops the cycle; once deployment begins, the bounded reload and verification finish before watch exits.
+
+Focused workbench validation:
+
+```bash
+node --test workspace/dev-safety.test.mjs workspace/dev-runtime.test.mjs workspace/dev-cycle.test.mjs workspace/dev-watch.test.mjs
+```
+
+`bootstrap.mjs` only clones what is missing. It never fetches, checks out or deletes an existing working tree, so it is safe to rerun on any machine.
 
 ## OMX
 

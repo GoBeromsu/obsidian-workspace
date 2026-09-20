@@ -1,6 +1,6 @@
 # Architecture
 
-> How every Obsidian plugin in this submodule workspace is structured internally.
+> How every Obsidian plugin in this linked workspace is structured internally.
 
 ## Quick Start
 
@@ -121,17 +121,9 @@ The composition root (`main.ts`) passes real Obsidian objects which satisfy thes
 - Synced artifacts: scripts, ESLint config, CI/CD workflows, `src/shared/` modules
 - Per-plugin overrides via `boiler.config.mjs`
 
-## Monorepo Layout
+## Workspace Layout
 
-| Submodule | Purpose | Default Branch |
-|-----------|---------|----------------|
-| `obsidian-eagle-plugin` | Image upload to Eagle app | `main` |
-| `open-connections` | Semantic note connections via embeddings | `main` |
-| `Metadata-Auto-Classifier` | AI-powered metadata classification | `master` |
-| `obsidian-boiler-template` | Source-of-truth seed template | `master` |
-| `obsidian-bible-search` | Bible verse search | `main` |
-| `obsidian-qmd` | QMD semantic search integration | `main` |
-| `youtube-note-playlist` | YouTube music player via yt-dlp | `main` |
+Every plugin is an independent repository cloned into a git-ignored directory at the workspace root by `node workspace/bootstrap.mjs`. The authoritative roster — paths, slugs, branches, install channels — is generated into [workspace-catalog.md](workspace-catalog.md) from `workspace/plugins.manifest.json`.
 
 ---
 
