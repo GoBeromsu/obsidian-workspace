@@ -4,6 +4,7 @@ notes/
 
 # Local env (contains personal vault paths)
 .env
+.dev-vault/
 
 # macOS
 .DS_Store
@@ -33,5 +34,6 @@ youtube-note-playlist/
 .clawhip/
 .hermes/
 artifacts/
+.artifacts/
 docs/design-system/
 obsidian-dream-space/
