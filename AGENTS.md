@@ -28,13 +28,13 @@ Motion, microinteractions, and sensory feedback are part of the UX, not decorati
 - Give immediate feedback for every action and state change.
 - Use natural easing and springs; keep transitions spatially coherent.
 - Add context-aware delight that fits the product's personality.
-- Reduced-motion preferences soften motion, never remove feedback. No intrusive audio.
+- Use sound and haptics only when they help; reduced-motion softens motion, never removes feedback; no intrusive audio.
 - Review for missed delight, not just usability. Never remove meaningful animation for being non-essential.
 
 ## Safety
 
 - Edit upstream sources, never generated or shared copies.
-- Never touch user vaults or Obsidian's vault registry; use `.dev-vault` or `.dev-vault-<id>`.
+- Never touch user vaults or their vault-registry entries; develop only in `.dev-vault` or `.dev-vault-<id>`.
 - Unit-test pure logic; verify UI and integrations in the real app.
 - Config paths are vault-relative.
 - Minimize dependencies, network access, and filesystem permissions; disclose external access.
