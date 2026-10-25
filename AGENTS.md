@@ -9,7 +9,8 @@ Applies to all plugins. Plugin-specific rules belong in their own `AGENTS.md`.
 
 ## Code
 
-- **Obsidian-native first.** Prefer built-in UI components, Vault/FileManager APIs, and theme variables over custom implementations.
+- **Obsidian-native first.** 
+  - Prefer built-in UI components, Vault/FileManager APIs, and theme variables over custom implementations.
 - Utilize [Obsidian](https://obsidian.md/cli) such as debugging, capturing, qa ...
 - Avoid `document.createElement`; never use `innerHTML`, inline styles, hardcoded colors, `!important`, or `:has`.
 - Keep entry points limited to lifecycle, registration, exports, and wiring.
@@ -19,7 +20,8 @@ Applies to all plugins. Plugin-specific rules belong in their own `AGENTS.md`.
 - Never hardcode `.obsidian`; use `app.vault.configDir`.
 - Register and clean up listeners, timers, and resources through Obsidian's lifecycle APIs.
 - Keep startup lightweight, avoid unnecessary vault scans, and support popout windows.
-- Use Bun exclusively. Migrate existing lockfiles to `bun.lock` and remove other package-manager configurations.
+- Use Bun exclusively. 
+  - Migrate existing lockfiles to `bun.lock` and remove other package-manager configurations.
 
 ## Safety
 
