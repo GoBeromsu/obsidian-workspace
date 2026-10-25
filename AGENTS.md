@@ -17,6 +17,7 @@ Applies to all plugins. Plugin-specific rules belong in their own `AGENTS.md`.
 - One responsibility per module, maximum 500 logic LOC. Separate I/O from pure logic.
 - Keep `domain/`, `types/`, and `utils/` independent of `obsidian`.
 - Prefer self-documenting code; comment only non-obvious invariants.
+  - Comments can easily become outdated
 - Never hardcode `.obsidian`; use `app.vault.configDir`.
 - Register and clean up listeners, timers, and resources through Obsidian's lifecycle APIs.
 - Keep startup lightweight, avoid unnecessary vault scans, and support popout windows.
