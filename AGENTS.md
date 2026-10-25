@@ -24,6 +24,19 @@ Applies to all plugins. Plugin-specific rules belong in their own `AGENTS.md`.
 - Use Bun exclusively. 
   - Migrate existing lockfiles to `bun.lock` and remove other package-manager configurations.
 
+## Interaction Design
+
+**Design for usability and delight.** Motion, microinteractions, and sensory feedback are integral to the user experience, not merely decoration.
+
+- **Microinteractions:** Provide immediate, meaningful feedback for user actions and state changes.
+- **Physicality:** Use natural easing, spring dynamics, and direct manipulation to make interactions feel tactile and responsive.
+- **Contextual delight:** Introduce playful, surprising, and context-aware details that reinforce the product's personality.
+- **Motion choreography:** Preserve spatial continuity and visual hierarchy through coherent transitions and timing.
+- **Multisensory feedback:** Use purposeful animation, sound, and haptics when they enhance the interaction.
+- **Craft and restraint:** Preserve usability, performance, accessibility, and user control. Respect reduced-motion preferences and avoid intrusive audio.
+
+**Review for delight, not just usability.** Actively identify missed opportunities for expressive motion, tactile feedback, and memorable microinteractions. Do not remove meaningful animation merely because it is not functionally necessary.
+
 ## Safety
 
 - Never edit generated or shared copies directly; update their upstream source.
