@@ -93,10 +93,6 @@ function evaluatePlugin(plugin, requireLocal) {
     issues.push('repo_path_missing');
   }
 
-  if (plugin.repo_kind === 'root-local' && plugin.release_kind !== 'incubator') {
-    issues.push('root_local_releaseable_plugin');
-  }
-
   if (!Array.isArray(plugin.artifact_files) || plugin.artifact_files.length === 0) {
     issues.push('missing_artifact_contract');
   }

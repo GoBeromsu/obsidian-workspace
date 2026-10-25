@@ -24,7 +24,6 @@ notes/
 __pycache__/
 *.pyc
 Metadata-Auto-Classifier/
-agent-skill-deploy/
 obsidian-bible-search/
 obsidian-boiler-template/
 obsidian-eagle-plugin/
