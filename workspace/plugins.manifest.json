@@ -83,13 +83,11 @@
       "release_workflow": "Release plugin",
       "smoke_vault": "Test",
       "smoke_commands": [
-        "pnpm --dir obsidian-boiler-template run ci",
-        "pnpm --dir obsidian-boiler-template run sync:check"
+        "pnpm --dir obsidian-boiler-template run ci"
       ],
       "risk_tier": "high",
       "notes": [
-        "Control-plane source of truth",
-        "Release readiness depends on downstream sync health"
+        "Reference template for downstream plugins"
       ]
     },
     {
