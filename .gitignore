@@ -5,6 +5,7 @@ notes/
 # Local env (contains personal vault paths)
 .env
 .dev-vault/
+.dev-vault-*/
 
 # macOS
 .DS_Store
