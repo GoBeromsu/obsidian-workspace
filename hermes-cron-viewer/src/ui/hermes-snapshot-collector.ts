@@ -151,7 +151,7 @@ export async function collectRound(
 ): Promise<readonly CollectedSource[]> {
   const globalConcurrency = Math.max(1, options.globalConcurrency ?? 2);
   const now = options.now ?? (() => new Date().toISOString());
-  const results: CollectedSource[] = new Array(profiles.length);
+  const results: CollectedSource[] = new Array<CollectedSource>(profiles.length);
 
   // Group by server so one alias is never queried concurrently, then run groups under the global
   // cap. Grouping keeps both limits structural instead of relying on a spin loop.

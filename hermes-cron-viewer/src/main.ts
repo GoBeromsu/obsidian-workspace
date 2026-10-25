@@ -173,7 +173,7 @@ export default class HermesCronViewerPlugin extends Plugin {
       (placement === "right" ? this.app.workspace.getRightLeaf(false) : this.app.workspace.getLeaf("tab"));
     if (leaf === null) return;
     await leaf.setViewState({ type: viewType, active: true });
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
     this.scheduler.trigger();
   }
 }

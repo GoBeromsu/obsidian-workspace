@@ -91,15 +91,15 @@ describe("bodies never reach disk projection or logs (AC19)", () => {
     expect(serialized).not.toContain("lastError");
 
     const lines: string[] = [];
-    const original = console.log;
-    console.log = (line: unknown) => void lines.push(String(line));
+    const original = console.debug;
+    console.debug = (line: unknown) => void lines.push(String(line));
     try {
       new Logger().round({
         sources: 1, commands: 3, durationMs: 1, parseFailures: 0,
         timezoneUnknown: 0, ledgerUnavailable: 1, capExceeded: 0, rejectedCommands: 0,
       });
     } finally {
-      console.log = original;
+      console.debug = original;
     }
     expect(lines.join("\n")).not.toContain(BODY);
   });

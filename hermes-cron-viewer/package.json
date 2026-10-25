@@ -7,13 +7,18 @@
   "scripts": {
     "build": "bun run esbuild.config.mjs",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "test": "bun test"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.2",
-    "@types/node": "^22.10.2",
-    "esbuild": "^0.24.2",
-    "obsidian": "^1.7.2",
-    "typescript": "^5.7.2"
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.13.0",
+    "eslint-plugin-obsidianmd": "^0.4.2",
+    "obsidian": "^1.14.4",
+    "typescript": "^6",
+    "typescript-eslint": "^8.72.0"
   }
 }
