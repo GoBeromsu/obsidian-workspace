@@ -37,3 +37,6 @@ artifacts/
 .artifacts/
 docs/design-system/
 obsidian-dream-space/
+obsidian-cmds-sample-plugin/
+obsidian-hermes/
+docs/workspace-catalog.md
