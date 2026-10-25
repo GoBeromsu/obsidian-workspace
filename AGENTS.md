@@ -31,6 +31,15 @@ Motion, microinteractions, and sensory feedback are part of the UX, not decorati
 - Use sound and haptics only when they help; reduced-motion softens motion, never removes feedback; no intrusive audio.
 - Review for missed delight, not just usability. Never remove meaningful animation for being non-essential.
 
+### Owner's taste
+
+- Beauty is a merge gate: if it isn't beautiful, it isn't done. Check light and dark themes.
+- Details include every surface: views, modals, settings, notices, and the status bar item at the bottom right.
+- Visualize state; motion and animation stay.
+- Zero friction: the obvious input just works (paste a URL → it plays), with fallbacks on by default and no error prompts.
+- Never make users wait on a blocking step; show progress and queue their actions (e.g., queued chat messages).
+- A separate UI/UX reviewer does the final check before merge or release.
+
 ## Safety
 
 - Edit upstream sources, never generated or shared copies.
