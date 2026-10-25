@@ -16,7 +16,7 @@ Three separate systems live here. Do not blur them.
 
 ```
 plugins.manifest.json ──▶ validate-manifest.mjs   (schema/enum/slug/policy gates)
-                     ├──▶ generate-catalog.mjs    (writes docs/workspace-catalog.md)
+                     ├──▶ generate-catalog.mjs    (writes git-ignored docs/workspace-catalog.md)
                      ├──▶ bootstrap.mjs           (clones only missing repos; never fetch/checkout/delete)
                      └──▶ release-readiness-report.mjs (queries `gh`, writes .artifacts/*, report-only)
 ```
@@ -53,7 +53,6 @@ Hermes data flow: `main.ts` injects `SshReadOnlyAdapter` + `RefreshScheduler` �
 | Path | Purpose |
 |------|---------|
 | `workspace/` | Control-plane + workbench scripts, manifest, `dev-*.test.mjs` suites |
-| `docs/` | Canonical contracts: `rules.md`, `architecture.md`, `patterns.md`, `gotchas.md`, `collaboration.md`, `harness-contract.md`, `release-architecture.md` |
 | `hermes-cron-viewer/src/` | Tracked plugin: `main.ts`, `ui/`, `domain/`, `types/`, `utils/` |
 | `hermes-cron-viewer/tests/` | Bun test suites + `obsidian-harness.ts`, `fixtures/` |
 | `.github/workflows/` | `release-gate-report.yml` — the only CI gate |
@@ -95,7 +94,7 @@ cd obsidian-eagle-plugin && pnpm run ci    # build && typecheck && lint && test
 
 ## Code Conventions & Common Patterns
 
-**Blocking rules (`docs/rules.md` — violations stop work):**
+**Blocking rules (violations stop work):**
 
 1. `index.ts` holds re-exports, factory composition, and wiring only.
 2. No catch-all `utils.ts` / `helpers.ts` / `service.ts` / `common.ts`; name modules after their responsibility.
@@ -154,7 +153,7 @@ Enforcement greps: `rg "import.*from 'obsidian'" */src/domain/ */src/utils/ */sr
 ## Runtime/Tooling Preferences
 
 - **Root has no `package.json` and no dependencies.** Control-plane and workbench scripts are plain Node ESM `.mjs` with `node:` builtins. Do not introduce a root package manager.
-- Node: `README.md` requires **Node 24+**; CI pins **Node 22** (`release-gate-report.yml`). Keep root scripts compatible with both — currently verified on Node 24.21.0.
+- Node: requires **Node 24+**; CI pins **Node 22** (`release-gate-report.yml`). Keep root scripts compatible with both — currently verified on Node 24.21.0.
 - `hermes-cron-viewer` → **Bun** (`bun.lock`, `@types/bun`). `obsidian-eagle-plugin` → **pnpm@10.28.2** (`packageManager`). Never cross the two toolchains.
 - Workbench runtime verbs require the `obsidian` CLI on `PATH`, with `.dev-vault` registered via **Open folder as vault**. Never rewrite the Obsidian vault registry.
 - `.env` and `.dev-vault/` are git-ignored and local-only. The workbench refuses any vault other than `<root>/.dev-vault`; never point it at a production vault.
@@ -165,7 +164,7 @@ Enforcement greps: `rg "import.*from 'obsidian'" */src/domain/ */src/utils/ */sr
 - Hermes: `bun test` (`hermes-cron-viewer/tests/`, with `obsidian-harness.ts` and `fixtures/`).
 - Eagle: `vitest run` via `pnpm test`; E2E via `pnpm e2e` (wdio).
 - Test observable behavior, edge values, and failure paths. Workbench tests use disposable temp vaults and a fake `obsidian` executable (`workspace/dev-test-fixture.mjs`) — never invoke the real CLI or touch `.dev-vault` from tests.
-- Definition of Done (`docs/collaboration.md`): build, lint, tests where present, layer/rule compliance, and QA verification for non-trivial changes.
+- Definition of Done: build, lint, tests where present, layer/rule compliance, and QA verification for non-trivial changes.
 - Runtime smoke loop: build → deploy → reload → verify, then `obsidian vault=.dev-vault dev:errors` for a clean error buffer.
 
 ## Release & Contribution Policy

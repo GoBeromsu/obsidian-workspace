@@ -63,4 +63,5 @@ function buildCatalog(manifest) {
 }
 
 const manifest = readJson(manifestPath);
+fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.writeFileSync(outputPath, buildCatalog(manifest));
