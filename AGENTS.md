@@ -1,58 +1,49 @@
-Applies to all plugins. Plugin-specific rules belong in their own `AGENTS.md`.
+Applies to all plugins. Plugin-specific rules go in the plugin's own `AGENTS.md`.
 
 ## Workflow
 
-1. Update `obsidian` and `eslint-plugin-obsidianmd` using the plugin's existing package manager.
-2. Review API changes. Prefer native APIs over deprecated calls, workarounds, shims, and unsafe casts.
-3. Audit obsolete fixtures, mocks, DOM shims, and test harnesses. Remove what is unnecessary; preserve meaningful regression coverage.
-4. Follow the latest [Obsidian developer policies](https://docs.obsidian.md/community-directory/developer-policies) and [plugin guidelines](https://docs.obsidian.md/plugins/releasing/plugin-guidelines).
+1. Update `obsidian` and `eslint-plugin-obsidianmd` with the plugin's package manager.
+2. Prefer native APIs over deprecated calls, shims, and unsafe casts.
+3. Remove obsolete mocks, DOM shims, and fixtures; keep meaningful regression coverage.
+4. Follow the [developer policies](https://docs.obsidian.md/community-directory/developer-policies) and [plugin guidelines](https://docs.obsidian.md/plugins/releasing/plugin-guidelines).
 
 ## Code
 
-- **Obsidian-native first.** 
-  - Prefer built-in UI components, Vault/FileManager APIs, and theme variables over custom implementations.
-- Utilize [Obsidian](https://obsidian.md/cli) such as debugging, capturing, qa ...
-- Avoid `document.createElement`; never use `innerHTML`, inline styles, hardcoded colors, `!important`, or `:has`.
-- Keep entry points limited to lifecycle, registration, exports, and wiring.
-- One responsibility per module, maximum 500 logic LOC. Separate I/O from pure logic.
-- Keep `domain/`, `types/`, and `utils/` independent of `obsidian`.
-- Prefer self-documenting code; comment only non-obvious invariants.
-  - Comments can easily become outdated
-- Never hardcode `.obsidian`; use `app.vault.configDir`.
-- Register and clean up listeners, timers, and resources through Obsidian's lifecycle APIs.
-- Keep startup lightweight, avoid unnecessary vault scans, and support popout windows.
-- Use Bun exclusively. 
-  - Migrate existing lockfiles to `bun.lock` and remove other package-manager configurations.
+- Obsidian-native first: built-in UI components, Vault/FileManager APIs, theme variables.
+- Use the [Obsidian CLI](https://obsidian.md/cli) for debugging, screenshots, and QA.
+- Never use `document.createElement`, `innerHTML`, inline styles, hardcoded colors, `!important`, or `:has`.
+- Entry points hold only lifecycle, registration, exports, and wiring.
+- One responsibility per module, max 500 logic LOC; separate I/O from pure logic.
+- `domain/`, `types/`, `utils/` never import `obsidian`.
+- Comment only non-obvious invariants.
+- Use `app.vault.configDir`, never `.obsidian`.
+- Register listeners, timers, and resources through Obsidian lifecycle APIs.
+- Keep startup light, avoid vault scans, support popout windows.
+- Bun only: use `bun.lock`, remove other package-manager config.
 
 ## Interaction Design
 
-**Design for usability and delight.** Motion, microinteractions, and sensory feedback are integral to the user experience, not merely decoration.
+Motion, microinteractions, and sensory feedback are part of the UX, not decoration.
 
-- **Microinteractions:** Provide immediate, meaningful feedback for user actions and state changes.
-- **Physicality:** Use natural easing, spring dynamics, and direct manipulation to make interactions feel tactile and responsive.
-- **Contextual delight:** Introduce playful, surprising, and context-aware details that reinforce the product's personality.
-- **Motion choreography:** Preserve spatial continuity and visual hierarchy through coherent transitions and timing.
-- **Multisensory feedback:** Use purposeful animation, sound, and haptics when they enhance the interaction.
-- **Craft and restraint:** Preserve usability, performance, accessibility, and user control. Respect reduced-motion preferences and avoid intrusive audio.
-
-**Review for delight, not just usability.** Actively identify missed opportunities for expressive motion, tactile feedback, and memorable microinteractions. Do not remove meaningful animation merely because it is not functionally necessary.
+- Give immediate feedback for every action and state change.
+- Use natural easing and springs; keep transitions spatially coherent.
+- Add context-aware delight that fits the product's personality.
+- Reduced-motion preferences soften motion, never remove feedback. No intrusive audio.
+- Review for missed delight, not just usability. Never remove meaningful animation for being non-essential.
 
 ## Safety
 
-- Never edit generated or shared copies directly; update their upstream source.
-- Never modify user vaults or Obsidian's vault registry. Use `.dev-vault` for development.
-- Unit-test pure logic; verify Obsidian UI and integrations in the real application.
-- Keep configuration paths vault-relative.
-- Minimize dependencies, network access, and filesystem permissions. Disclose external access.
-- Releases are CI-only. Never tag, publish, or create releases locally.
+- Edit upstream sources, never generated or shared copies.
+- Never touch user vaults or Obsidian's vault registry; use `.dev-vault` or `.dev-vault-<id>`.
+- Unit-test pure logic; verify UI and integrations in the real app.
+- Config paths are vault-relative.
+- Minimize dependencies, network access, and filesystem permissions; disclose external access.
+- Releases are CI-only: never tag, publish, or release locally.
 
 ## Done
 
-- Branch from `main` using `feature|fix|refactor|chore/<name>`.
-- Use Conventional Commits and PRs into `main` (required check: `report`).
+- Branch from `main` as `feature|fix|refactor|chore/<name>`; Conventional Commits; PR into `main` (required check `ci / report`).
 - Build, typecheck, lint (`eslint-plugin-obsidianmd` recommended), and tests pass.
-- Runtime changes require a clean `obsidian vault=.dev-vault dev:errors` check.
-- **Before release, pass the official [Obsidian Community preview scan](https://docs.obsidian.md/community-directory/manage-entry)** on the pushed branch. 
-  - Resolve every Error, Warning, and Recommendation.
-  - Preferred Aside (browser agent)
-- Report scan results and unresolved verification gaps. Never claim a pass without an actual scan result.
+- Runtime changes: clean `obsidian vault=<dev vault> dev:errors`.
+- Before release, pass the [Community preview scan](https://docs.obsidian.md/community-directory/manage-entry) on the pushed branch (Aside browser agent preferred); resolve every Error, Warning, and Recommendation.
+- Report scan results and verification gaps; never claim a pass without a real scan.
