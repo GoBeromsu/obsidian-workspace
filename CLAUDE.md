@@ -12,3 +12,5 @@ Control plane for git-ignored plugin clones. No root `package.json`; run `bun wo
 - `validate.ts`: manifest check (CI job `report`)
 
 Plugin contract: `bun run dev` / `bun run build` emit `main.js`, `manifest.json`, `styles.css` into `dist/`.
+
+Naming: GitHub repo = local folder = `package.json` name = `obsidian-<slug>`; plugin id = `<slug>` without `obsidian`. Published ids are never changed. `Metadata-Auto-Classifier` is pending rename to `obsidian-metadata-auto-classifier`.
