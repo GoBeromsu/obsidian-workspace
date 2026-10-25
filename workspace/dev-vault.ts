@@ -13,7 +13,10 @@ const plugDir = `${vault}/.obsidian/plugins`;
 mkdirSync(plugDir, { recursive: true });
 
 const configFile = `${vault}/.obsidian/app.json`;
-if (!existsSync(configFile)) await Bun.write(configFile, "{}\n");
+const config = existsSync(configFile) ? await Bun.file(configFile).json() : {};
+// Obsidian 1.15 opens Settings in a popout window, which CLI screenshots cannot see.
+config.settingsPopoutWindow = false;
+await Bun.write(configFile, JSON.stringify(config, null, 2) + "\n");
 
 const linked: string[] = [];
 for (const p of targets) {
