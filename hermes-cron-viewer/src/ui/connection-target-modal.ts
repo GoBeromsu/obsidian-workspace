@@ -98,7 +98,7 @@ export class ConnectionTargetModal extends Modal {
 
     const input = root.createEl("input", {
       attr: { type: "text", "aria-label": "SSH target", spellcheck: "false" },
-    }) as HTMLInputElement;
+    });
     input.value = this.buffer;
     input.disabled = this.busy;
     input.addEventListener("input", () => {
@@ -116,13 +116,13 @@ export class ConnectionTargetModal extends Modal {
     const save = actions.createEl("button", {
       text: "Save",
       attr: { type: "button" },
-    }) as HTMLButtonElement;
+    });
     save.disabled = this.busy;
     save.addEventListener("click", () => void this.save());
     const cancel = actions.createEl("button", {
       text: "Cancel",
       attr: { type: "button" },
-    }) as HTMLButtonElement;
+    });
     cancel.addEventListener("click", () => this.close());
   }
 }

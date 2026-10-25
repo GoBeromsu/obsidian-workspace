@@ -32,7 +32,7 @@ const KNOWN_KEYS = new Set<string>([...INTERPRETED_KEYS, ...RECOGNIZED_KEYS]);
 function readStatus(value: unknown): { token: JobStatusToken; raw: string | null } {
   if (value === undefined || value === null) return { token: "absent", raw: null };
   const text = asString(value);
-  if (text === null) return { token: "unknown-value", raw: String(value) };
+  if (text === null) return { token: "unknown-value", raw: JSON.stringify(value) };
   if (KNOWN_STATUS.includes(text)) return { token: text as JobStatusToken, raw: null };
   return { token: "unknown-value", raw: text };
 }

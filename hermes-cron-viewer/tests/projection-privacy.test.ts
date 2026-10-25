@@ -142,8 +142,8 @@ describe("snapshot projection", () => {
 describe("logger privacy", () => {
   test("round logging records shapes, never bodies", () => {
     const lines: string[] = [];
-    const original = console.log;
-    console.log = (line: unknown) => void lines.push(String(line));
+    const original = console.debug;
+    console.debug = (line: unknown) => void lines.push(String(line));
     try {
       new Logger().round({
         sources: 2,
@@ -156,7 +156,7 @@ describe("logger privacy", () => {
         rejectedCommands: 0,
       });
     } finally {
-      console.log = original;
+      console.debug = original;
     }
     expect(lines.join("\n")).toContain("sources=2");
     expect(lines.join("\n")).not.toContain(SENTINEL);

@@ -79,8 +79,8 @@ export function parseDocumentResponse(stdout: string): DocumentResult<DocumentRe
     value: {
       ok: true,
       status,
-      version: version as string | null,
-      mode: mode as number | null,
+      version,
+      mode,
       path,
       ...(status === "present" ? { body: raw.body as string } : {}),
     },

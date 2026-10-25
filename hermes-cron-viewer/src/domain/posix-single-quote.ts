@@ -6,6 +6,7 @@
  */
 
 /** Control characters, NUL and newline can never appear in a bound token. */
+// eslint-disable-next-line no-control-regex -- intentional: reject control characters
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
 
 export class UnquotableTokenError extends Error {
