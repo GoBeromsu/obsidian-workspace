@@ -1,7 +1,7 @@
 [
   { "name": "Metadata Auto Classifier", "repo_path": "Metadata-Auto-Classifier", "repo_slug": "Xia-Ataraxia/obsidian-metadata-auto-classifier", "id": "metadata-auto-classifier" },
   { "name": "Bible Search", "repo_path": "obsidian-bible-search", "repo_slug": "Xia-Ataraxia/obsidian-bible-search", "id": "obsidian-bible-search" },
-  { "name": "Boiler Template", "repo_path": "obsidian-boiler-template", "repo_slug": "GoBeromsu/obsidian-boiler-template", "id": "sample-plugin" },
+  { "name": "Boiler Template", "repo_path": "obsidian-boiler-template", "repo_slug": "GoBeromsu/obsidian-boiler-template", "id": "boiler-template" },
   { "name": "Eagle", "repo_path": "obsidian-eagle", "repo_slug": "Xia-Ataraxia/obsidian-eagle", "id": "eagle" },
   { "name": "QMD", "repo_path": "obsidian-qmd", "repo_slug": "Xia-Ataraxia/obsidian-qmd", "id": "obsidian-qmd" },
   { "name": "Open Connections", "repo_path": "obsidian-open-connections", "repo_slug": "Xia-Ataraxia/obsidian-open-connections", "id": "open-connections" },
