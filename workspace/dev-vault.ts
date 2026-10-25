@@ -1,14 +1,22 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, symlinkSync } from "node:fs";
 import { plugins, repoDir, root } from "./plugins";
 
-const plugDir = `${root}/.dev-vault/.obsidian/plugins`;
+const id = process.argv[2];
+const targets = id ? plugins.filter((p) => p.id === id) : plugins;
+if (id && !targets.length) {
+  console.error(`unknown id "${id}"; valid: ${plugins.map((p) => p.id).join(", ")}`);
+  process.exit(1);
+}
+
+const vault = `${root}/${id ? `.dev-vault-${id}` : ".dev-vault"}`;
+const plugDir = `${vault}/.obsidian/plugins`;
 mkdirSync(plugDir, { recursive: true });
 
-const configFile = `${root}/.dev-vault/.obsidian/app.json`;
+const configFile = `${vault}/.obsidian/app.json`;
 if (!existsSync(configFile)) await Bun.write(configFile, "{}\n");
 
 const linked: string[] = [];
-for (const p of plugins) {
+for (const p of targets) {
   const dist = `${repoDir(p)}/dist`;
   if (existsSync(`${dist}/manifest.json`)) {
     rmSync(`${plugDir}/${p.id}`, { recursive: true, force: true });
@@ -24,4 +32,4 @@ for (const name of readdirSync(plugDir)) {
   if (!linked.includes(name)) rmSync(`${plugDir}/${name}`, { recursive: true, force: true });
 }
 
-await Bun.write(`${root}/.dev-vault/.obsidian/community-plugins.json`, JSON.stringify(linked, null, 2) + "\n");
+await Bun.write(`${vault}/.obsidian/community-plugins.json`, JSON.stringify(linked, null, 2) + "\n");
