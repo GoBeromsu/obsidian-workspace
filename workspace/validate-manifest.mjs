@@ -51,8 +51,8 @@ function validatePlugin(plugin, seenPaths) {
   }
   seenPaths.add(plugin.repo_path);
 
-  if (!['linked', 'root-local'].includes(plugin.repo_kind)) {
-    fail(`${plugin.name}: repo_kind must be "linked" or "root-local"`);
+  if (plugin.repo_kind !== 'linked') {
+    fail(`${plugin.name}: repo_kind must be "linked"`);
   }
 
   if (!['stable', 'beta', 'incubator'].includes(plugin.release_kind)) {
@@ -82,10 +82,6 @@ function validatePlugin(plugin, seenPaths) {
     if (!fs.existsSync(absoluteRepoPath)) {
       fail(`${plugin.name}: repo_path does not exist: ${plugin.repo_path}`);
     }
-  }
-
-  if (plugin.repo_kind === 'root-local' && plugin.release_kind !== 'incubator') {
-    fail(`${plugin.name}: root-local portfolio members must remain incubator until promoted`);
   }
 
   if (plugin.repo_kind === 'linked' && !isNonEmptyString(plugin.repo_slug)) {

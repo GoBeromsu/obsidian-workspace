@@ -150,35 +150,6 @@
       ]
     },
     {
-      "name": "Agent Skill Deploy",
-      "repo_path": "agent-skill-deploy",
-      "repo_kind": "linked",
-      "repo_slug": "GoBeromsu/agent-skill-deploy",
-      "git_branch": "main",
-      "plugin_id": "skill-deploy",
-      "portfolio_role": "plugin",
-      "release_kind": "incubator",
-      "install_channel": "brat",
-      "release_url": "https://github.com/GoBeromsu/agent-skill-deploy/releases/latest",
-      "artifact_files": [
-        "main.js",
-        "manifest.json",
-        "styles.css",
-        "versions.json"
-      ],
-      "ci_workflow": "CI",
-      "release_workflow": "Release plugin",
-      "smoke_vault": "Test",
-      "smoke_commands": [
-        "pnpm --dir agent-skill-deploy run ci"
-      ],
-      "risk_tier": "medium",
-      "notes": [
-        "Promoted from root-local incubator into its own public repo",
-        "Keep release_kind=incubator until release and smoke contracts are fully aligned"
-      ]
-    },
-    {
       "name": "Open Connections",
       "repo_path": "open-connections",
       "repo_kind": "linked",
@@ -239,33 +210,31 @@
       ]
     },
     {
-      "name": "Hermes",
-      "repo_path": "hermes-cron-viewer",
-      "repo_kind": "root-local",
-      "repo_slug": "GoBeromsu/obsidian-hermes",
+      "name": "Hermes Control Center",
+      "repo_path": "obsidian-hermes",
+      "repo_kind": "linked",
+      "repo_slug": "Xia-Ataraxia/obsidian-hermes",
       "git_branch": "main",
-      "plugin_id": "hermes-cron-viewer",
+      "plugin_id": "hermes-control-center",
       "portfolio_role": "plugin",
-      "release_kind": "incubator",
-      "install_channel": "brat",
-      "release_url": "https://github.com/GoBeromsu/obsidian-hermes/releases/latest",
+      "release_kind": "stable",
+      "install_channel": "community",
+      "release_url": "https://github.com/Xia-Ataraxia/obsidian-hermes/releases/latest",
       "artifact_files": [
         "main.js",
         "manifest.json",
         "styles.css"
       ],
-      "ci_workflow": "Build release artifacts",
-      "release_workflow": null,
-      "smoke_vault": "Ataraxia",
+      "ci_workflow": "CI",
+      "release_workflow": "Release Obsidian plugin",
+      "smoke_vault": "Test",
       "smoke_commands": [
-        "obsidian vault=\"Ataraxia\" plugin:reload id=\"hermes-cron-viewer\""
+        "obsidian vault=\"Test\" plugin:reload id=\"hermes-control-center\""
       ],
       "risk_tier": "high",
       "notes": [
-        "Public child repo GoBeromsu/obsidian-hermes owns releases for this plugin",
-        "Workspace source is currently maintained locally at hermes-cron-viewer/ and exported to the child repo by subtree export",
-        "Release workflow is not automated yet: releases are performed manually in the child repo",
-        "Cron data remains read-only; explicit profile SOUL.md and memories/USER.md saves are supported over SSH."
+        "Independent plugin repo (Bun)",
+        "Never persist Hermes job/output bodies; only parsed projections go to disk"
       ]
     }
   ]

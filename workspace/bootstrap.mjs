@@ -17,12 +17,11 @@ const git = (args, cwd = workspaceRoot) =>
 	execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-const linked = manifest.plugins.filter(plugin => plugin.repo_kind !== "root-local");
 
 let cloned = 0;
 let failed = 0;
 
-for (const { name, repo_path, repo_slug, git_branch } of linked) {
+for (const { name, repo_path, repo_slug, git_branch } of manifest.plugins) {
 	const target = join(workspaceRoot, repo_path);
 
 	if (existsSync(target)) {
@@ -46,5 +45,5 @@ for (const { name, repo_path, repo_slug, git_branch } of linked) {
 	}
 }
 
-console.log(`\n${linked.length} linked plugins — ${cloned} cloned, ${failed} failed`);
+console.log(`\n${manifest.plugins.length} linked plugins — ${cloned} cloned, ${failed} failed`);
 if (failed > 0) process.exitCode = 1;
