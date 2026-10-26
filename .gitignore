@@ -24,7 +24,7 @@ notes/
 # Python cache
 __pycache__/
 *.pyc
-Metadata-Auto-Classifier/
+obsidian-metadata-auto-classifier/
 obsidian-bible-search/
 obsidian-boiler-template/
 obsidian-eagle/
